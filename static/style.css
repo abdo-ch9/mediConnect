@@ -1,0 +1,396 @@
+/* static/style.css - Shadcn UI Inspired Redesign */
+
+/* 1. Global Resets and Base Styles */
+* {
+    box-sizing: border-box;
+	margin: 0;
+    padding: 0;
+}
+
+html, body {
+    height: 100%;
+    width: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: #FFFFFF; /* Base background for the iframe content */
+    color: #1F2937; /* Default text color (dark gray) */
+}
+
+/* 2. Main Chat Card Layout */
+.card {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: #FFFFFF !important; /* Card background */
+    border-radius: 0 !important; /* Outer radius controlled by index.html's .chat-widget */
+    box-shadow: none !important; /* Outer shadow controlled by index.html */
+    overflow: hidden; /* Ensures child elements adhere to card boundaries */
+}
+
+/* 3. Card Header */
+.card-header {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px !important; /* Shadcn-like padding */
+    border-bottom: 1px solid #E5E7EB !important; /* Subtle border (light gray) */
+    background-color: #FFFFFF !important; /* Header background */
+    border-radius: 0 !important;
+}
+
+.card-header .img_cont {
+    width: 36px; /* Slightly smaller avatar */
+    height: 36px;
+    margin-right: 12px;
+}
+
+.card-header .user_img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    /* For icon/initials placeholder if needed */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 500;
+    /* background-color: #E5E7EB; /* Placeholder bg */
+    /* color: #4B5563; /* Placeholder text color */
+}
+
+.card-header .user_info span {
+    font-size: 15px; /* Slightly smaller title */
+    font-weight: 600; /* Medium weight */
+    color: #111827; /* Darker text for title */
+}
+
+.card-header .user_info p {
+    font-size: 12px;
+    color: #6B7280; /* Lighter gray for subtitle/status */
+    margin-top: 2px;
+}
+
+.card-header .online_icon { /* Kept if used, style as needed */
+    width: 8px;
+    height: 8px;
+    background-color: #10B981; /* Green */
+    border-radius: 50%;
+    border: 1.5px solid white;
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+}
+
+
+/* 4. Message Area */
+.msg_card_body {
+    flex-grow: 1;
+    padding: 16px !important; /* Consistent padding */
+	overflow-y: auto;
+    background-color: #F9FAFB !important; /* Very light gray for message background */
+}
+
+/* Custom Scrollbar (Subtle) */
+.msg_card_body::-webkit-scrollbar {
+    width: 6px;
+}
+.msg_card_body::-webkit-scrollbar-track {
+    background: transparent; /* Track is almost invisible */
+}
+.msg_card_body::-webkit-scrollbar-thumb {
+    background: #D1D5DB; /* Light gray thumb */
+    border-radius: 3px;
+}
+.msg_card_body::-webkit-scrollbar-thumb:hover {
+    background: #9CA3AF; /* Darker gray on hover */
+}
+
+/* 5. Message Bubbles & Structure */
+/* New base class for message row - used in chat.html JS */
+.msg_container_base {
+    display: flex;
+    margin-bottom: 12px; /* Spacing between message groups */
+    animation: messageFadeInUp 0.3s ease-out forwards;
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+.msg_container_base.sent {
+    justify-content: flex-end;
+}
+
+.msg_container_base.received {
+    justify-content: flex-start;
+}
+
+.msg_container_base .img_cont_msg { /* Avatar container in message */
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    overflow: hidden;
+    align-self: flex-end; /* Align to bottom of message */
+}
+.msg_container_base.sent .img_cont_msg {
+    margin-left: 8px;
+}
+.msg_container_base.received .img_cont_msg {
+    margin-right: 8px;
+}
+
+.msg_container_base .user_img_msg { /* Actual avatar image/icon placeholder */
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* For icon/initials placeholder if needed */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+/* Message bubble styling */
+.msg_cotainer, .msg_cotainer_send {
+    padding: 8px 12px; /* Comfortable padding */
+    border-radius: 18px; /* Messenger-like radius */
+    max-width: 75%;
+    word-wrap: break-word;
+    line-height: 1.5;
+    font-size: 14px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+}
+
+.msg_cotainer { /* Bot messages */
+    background-color: #E4E6EB; /* Messenger light gray */
+    color: #050505; /* Darker text for contrast */
+    /* border-bottom-left-radius: 4px; /* Optional: subtle tail - REMOVED FOR UNIFORM RADIUS */
+}
+
+.msg_cotainer_send { /* User messages */
+    background-color: #0084FF; /* Messenger blue */
+    color: #FFFFFF; /* White text */
+    /* border-bottom-right-radius: 4px; /* Optional: subtle tail - REMOVED FOR UNIFORM RADIUS */
+}
+
+/* Timestamps for messages - separate div below the main container div */
+.msg_time, .msg_time_send {
+    font-size: 11px;
+    color: #9CA3AF; /* Lighter gray for timestamps */
+    margin-top: 4px;
+    padding: 0 8px; /* Align with bubble horizontal padding */
+}
+.msg_container_base.sent + .msg_time_send { /* Style for timestamp of sent message */
+    text-align: right;
+    margin-right: 36px; /* (avatar width + margin) */
+}
+.msg_container_base.received + .msg_time { /* Style for timestamp of received message */
+    text-align: left;
+    margin-left: 36px; /* (avatar width + margin) */
+}
+
+
+/* 6. Typing Indicator */
+/* Uses .msg_container_base.received for layout */
+.typing_indicator {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px; /* Match bubble padding */
+    background-color: #F3F4F6; /* Same as bot message */
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.typing_indicator span {
+    height: 7px;
+    width: 7px;
+    margin: 0 2px;
+    background-color: #9CA3AF; /* Gray dots */
+	border-radius: 50%;
+    display: inline-block;
+    animation: typingBounce 1.4s infinite ease-in-out both;
+}
+.typing_indicator span:nth-child(1) { animation-delay: -0.32s; }
+.typing_indicator span:nth-child(2) { animation-delay: -0.16s; }
+.typing_indicator span:nth-child(3) { animation-delay: 0s; }
+
+
+/* 7. Card Footer / Input Area */
+.card-footer {
+    padding: 12px 16px !important;
+    background-color: #FFFFFF !important;
+    border-top: 1px solid #E5E7EB !important;
+    border-radius: 0 !important;
+}
+
+.card-footer .input-group {
+    display: flex;
+    align-items: center;
+}
+
+.type_msg { /* Input field */
+    flex-grow: 1;
+    border: 1px solid #D1D5DB !important; /* Slightly darker border for input */
+    border-radius: 6px !important; /* Standard Shadcn radius */
+    padding: 8px 12px !important;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #111827 !important;
+    background-color: #FFFFFF !important;
+    height: auto !important;
+    min-height: 40px !important; /* Based on padding and line height */
+    resize: none; /* Prevent textarea resize if it was one */
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.type_msg::placeholder {
+    color: #9CA3AF;
+}
+.type_msg:focus {
+    border-color: #3B82F6 !important; /* Accent color border on focus */
+    background-color: #FFFFFF !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important; /* Focus ring */
+    outline: none !important;
+}
+
+.send_btn { /* Send button */
+    width: 38px; /* Adjusted size */
+    height: 38px;
+    border-radius: 6px !important; /* Match input field radius */
+    background-color: #0084FF !important; /* Messenger blue */
+    color: white !important;
+    border: none !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+	cursor: pointer;
+    margin-left: 8px; /* Space from input */
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.send_btn:hover {
+    background-color: #0073E0 !important; /* Darker Messenger blue on hover */
+}
+.send_btn:active {
+    transform: scale(0.96);
+}
+.send_btn i {
+    font-size: 16px;
+    line-height: 1;
+}
+
+/* 8. Animations */
+@keyframes messageFadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+}
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes typingBounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1.0); }
+}
+
+/* 9. Cleanup & Bootstrap overrides (if classes still used in HTML) */
+/* These are broad overrides, ideally HTML would be updated to not need them */
+.container-fluid, .h-100 { height: 100%; }
+.row { display: flex; flex-wrap: wrap; margin-left: -15px; margin-right: -15px; /* Standard BS behavior */ }
+.justify-content-center { justify-content: center !important; }
+.col-12 { flex: 0 0 100%; max-width: 100%; padding-left: 15px; padding-right: 15px; /* Standard BS behavior */ }
+.bd-highlight { /* Ensure it doesn't break flex if used */ display: flex; align-items: center; }
+
+/* Remove any remaining direct Bootstrap influence if not explicitly restyled above */
+.input-group-append, .input-group-text {
+    /* These are usually handled by direct .send_btn styling now */
+    /* Add specific resets if they interfere */
+    margin-left: 0;
+    border: none;
+    background: transparent;
+	padding: 0;
+}
+.form-control { /* Resetting general form-control if .type_msg isn't enough */
+    box-shadow: none !important;
+}
+
+/* Clear any old specific class styling not covered */
+.msg_head, .chat, .contacts_body, .search, .search_btn, .contacts, .active, .video_cam, #action_menu_btn, .action_menu, .offline, .mb-4,
+.d-flex, .justify-content-start, .justify-content-end { /* These generic flex helpers might be fine, but specific use in old HTML structure should be checked */
+    /* Set to initial or remove if they conflict and old HTML structure using them is phased out */
+    /* For now, just ensuring they don't have old problematic styles */
+}
+
+/* 10. Responsive Adjustments */
+@media (max-width: 768px) {
+    .card-header {
+        padding: 8px 12px !important;
+    }
+    .msg_card_body {
+        padding: 12px !important;
+    }
+    .card-footer {
+        padding: 8px 12px !important;
+}
+    .msg_cotainer, .msg_cotainer_send {
+        max-width: 80%;
+        /* Consider slightly smaller font if needed, e.g., font-size: 13px; */
+}
+    .type_msg {
+        /* font-size: 13px; /* Example: if text input needs adjustment */
+    }
+}
+
+@media (max-width: 480px) {
+    .card-header {
+        padding: 8px !important;
+    }
+    .card-header .img_cont {
+        width: 32px;
+        height: 32px;
+        margin-right: 8px;
+    }
+    .card-header .user_info span {
+        font-size: 14px;
+    }
+    .card-header .user_info p {
+        font-size: 11px;
+    }
+    .msg_card_body {
+        padding: 8px !important;
+    }
+    .card-footer {
+        padding: 8px !important;
+}
+    .msg_cotainer, .msg_cotainer_send {
+        max-width: 85%;
+        font-size: 13px; /* Slightly smaller font for very small screens */
+    }
+    .msg_container_base .img_cont_msg {
+        width: 24px;
+        height: 24px;
+    }
+    .msg_container_base.sent + .msg_time_send {
+        margin-right: 32px; /* 24px avatar + 8px margin */
+    }
+    .msg_container_base.received + .msg_time {
+        margin-left: 32px; /* 24px avatar + 8px margin */
+    }
+    .type_msg {
+        font-size: 13px;
+        min-height: 36px !important; /* Adjust if padding changes significantly */
+        padding: 6px 10px !important;
+    }
+    .send_btn {
+        width: 34px;
+        height: 34px;
+    }
+    .send_btn i {
+        font-size: 14px;
+    }
+    .msg_time, .msg_time_send {
+        font-size: 10px;
+}
+}

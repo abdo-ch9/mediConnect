@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Assistant Médical - MediConnect{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+            <!-- Chat Header -->
+            <div class="bg-primary-600 px-6 py-4">
+                <h1 class="text-xl font-semibold text-white">Assistant Médical</h1>
+                <p class="text-primary-100 text-sm">Posez vos questions médicales générales</p>
+            </div>
+
+            <!-- Chat Messages -->
+            <div id="chat-messages" class="h-96 overflow-y-auto p-6 space-y-4">
+                <!-- Welcome Message -->
+                <div class="flex justify-start">
+                    <div class="max-w-[80%] rounded-lg px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white">
+                        Bonjour! Je suis votre assistant médical. Je peux vous aider avec des questions sur les médicaments, symptômes, et conseils médicaux généraux. Que puis-je faire pour vous?
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Animation (Hidden by default) -->
+            <div id="loading-animation" class="hidden p-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-primary-600 rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    <div class="w-2 h-2 bg-primary-600 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="border-t border-gray-200 dark:border-gray-700 p-4">
+                <form id="chat-form" class="flex space-x-4">
+                    <input type="text" 
+                           id="message-input"
+                           class="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                           placeholder="Ex: Donnez-moi des médicaments pour la fièvre..."
+                           required>
+                    <button type="submit"
+                            class="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        Envoyer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chat-form');
+    const messageInput = document.getElementById('message-input');
+    const chatMessages = document.getElementById('chat-messages');
+    const loadingAnimation = document.getElementById('loading-animation');
+
+    function addMessage(content, isUser = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+        
+        const messageBubble = document.createElement('div');
+        messageBubble.className = `max-w-[80%] rounded-lg px-4 py-2 ${
+            isUser 
+                ? 'bg-primary-600 text-white' 
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+        }`;
+        messageBubble.textContent = content;
+        
+        messageDiv.appendChild(messageBubble);
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showLoading() {
+        loadingAnimation.classList.remove('hidden');
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function hideLoading() {
+        loadingAnimation.classList.add('hidden');
+    }
+
+    chatForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const message = messageInput.value.trim();
+        if (!message) return;
+
+        // Add user message
+        addMessage(message, true);
+        messageInput.value = '';
+        showLoading();
+
+        try {
+            const response = await fetch('/api/chatbot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message }),
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Add bot response
+                addMessage(data.response);
+            } else {
+                addMessage('Désolé, une erreur est survenue. Veuillez réessayer.');
+            }
+        } catch (error) {
+            addMessage('Désolé, une erreur est survenue. Veuillez réessayer.');
+        } finally {
+            hideLoading();
+        }
+    });
+});
+</script>
+{% endblock %} 

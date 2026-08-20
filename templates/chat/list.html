@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Messages - MediConnect{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Messages</h1>
+            </div>
+
+            {% if conversations %}
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for conversation in conversations %}
+                <a href="{{ url_for('private_chat', user_id=conversation.other_user_id) }}" class="block hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <div class="p-4 flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="h-12 w-12 rounded-full bg-indigo-600 flex items-center justify-center">
+                                <span class="text-white font-medium">{{ conversation.other_user_first_name[0] }}{{ conversation.other_user_last_name[0] }}</span>
+                            </div>
+                        </div>
+                        <div class="ml-4 flex-1">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h2 class="text-lg font-medium text-gray-900 dark:text-white">
+                                        {% if conversation.other_user_role == 'doctor' %}
+                                        Dr. {{ conversation.other_user_first_name }} {{ conversation.other_user_last_name }}
+                                        {% else %}
+                                        {{ conversation.other_user_first_name }} {{ conversation.other_user_last_name }}
+                                        {% endif %}
+                                    </h2>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        {% if conversation.other_user_role == 'doctor' %}
+                                        Médecin
+                                        {% else %}
+                                        Patient
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                {% if conversation.unread_count > 0 %}
+                                <div class="ml-2 flex-shrink-0">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                                        {{ conversation.unread_count }}
+                                    </span>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% if conversation.last_message %}
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 truncate">
+                                {{ conversation.last_message }}
+                            </p>
+                            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                                {{ conversation.last_message_time }}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-10 text-gray-500 dark:text-gray-400">
+                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">Aucune conversation</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Commencez une nouvelle conversation en sélectionnant un contact.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

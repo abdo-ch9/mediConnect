@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}À propos - MediConnect{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="bg-gradient-to-r from-sky-400 to-blue-600 text-white">
+    <div class="container px-4 py-16 mx-auto">
+        <div class="max-w-3xl mx-auto text-center">
+            <h1 class="text-4xl font-extrabold mb-4">À propos de MediConnect</h1>
+            <p class="text-xl">Notre mission est de faciliter l'accès aux soins médicaux grâce à la technologie</p>
+        </div>
+    </div>
+</section>
+
+<!-- Story Section -->
+<section class="py-12 bg-white dark:bg-gray-900">
+    <div class="container px-4 mx-auto">
+        <div class="max-w-4xl mx-auto">
+            <div class="mb-10">
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Notre histoire</h2>
+                <p class="text-lg text-gray-700 dark:text-gray-400 mb-4">
+                    MediConnect est né d'une vision simple : rendre les soins de santé plus accessibles et plus efficaces pour tous. Fondée en 2023 par une équipe de professionnels de la santé et d'experts en technologie, notre plateforme a pour mission de combler le fossé entre les patients et les professionnels de santé.
+                </p>
+                <p class="text-lg text-gray-700 dark:text-gray-400 mb-4">
+                    Face aux défis croissants du système de santé - délais d'attente, accès limité aux spécialistes, manque de suivi continu - nous avons créé une solution intégrée qui met la technologie au service de la santé. Notre plateforme combine la prise de rendez-vous en ligne, les dossiers médicaux électroniques et l'assistance par intelligence artificielle pour offrir une expérience médicale fluide et personnalisée.
+                </p>
+                <p class="text-lg text-gray-700 dark:text-gray-400">
+                    Aujourd'hui, MediConnect continue d'évoluer avec l'objectif constant d'améliorer la relation patient-médecin et de contribuer à un système de santé plus efficace et plus humain.
+                </p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8 mb-12">
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Notre vision</h3>
+                    <p class="text-gray-700 dark:text-gray-400">
+                        Nous aspirons à créer un monde où chaque personne a accès à des soins de qualité, où les médecins peuvent exercer leur profession de manière optimale, et où la technologie agit comme un facilitateur plutôt qu'une barrière.
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Nos valeurs</h3>
+                    <ul class="space-y-2 text-gray-700 dark:text-gray-400">
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 mr-2 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span><strong>Confiance</strong> - Nous construisons des relations durables basées sur la transparence</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 mr-2 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span><strong>Innovation</strong> - Nous explorons constamment de nouvelles solutions</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 mr-2 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span><strong>Accessibilité</strong> - Nous rendons les soins de santé disponibles pour tous</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 mr-2 text-primary-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span><strong>Excellence</strong> - Nous visons la plus haute qualité dans tout ce que nous faisons</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="bg-primary-600 text-white py-12">
+    <div class="container px-4 mx-auto text-center">
+        <h2 class="text-3xl font-bold mb-4">Rejoignez la révolution médicale</h2>
+        <p class="text-xl mb-8 max-w-3xl mx-auto">Devenez membre de MediConnect et participez à la transformation numérique de la santé.</p>
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+            <a href="{{ url_for('register') }}" class="inline-flex justify-center items-center py-3 px-5 text-base font-medium text-center text-primary-700 rounded-lg bg-white hover:bg-gray-100 focus:ring-4 focus:ring-gray-400">
+                Créer un compte
+            </a>
+            <a href="{{ url_for('contact') }}" class="inline-flex justify-center items-center py-3 px-5 text-base font-medium text-center text-white rounded-lg border border-white hover:bg-primary-700 focus:ring-4 focus:ring-primary-300">
+                Nous contacter
+            </a>
+        </div>
+    </div>
+</section>
+{% endblock %} 

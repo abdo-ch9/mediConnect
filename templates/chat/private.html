@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Chat avec {{ other_user.first_name }} {{ other_user.last_name }} - MediConnect{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-4xl mx-auto px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+            <!-- Chat header -->
+            <div class="border-b border-gray-200 dark:border-gray-700 p-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <div class="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center">
+                            <span class="text-white font-medium">{{ other_user.first_name[0] }}{{ other_user.last_name[0] }}</span>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <h2 class="text-lg font-medium text-gray-900 dark:text-white">
+                            Dr. {{ other_user.first_name }} {{ other_user.last_name }}
+                        </h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            {% if other_user.role == 'doctor' %}
+                            Médecin
+                            {% else %}
+                            Patient
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat messages -->
+            <div class="h-[500px] overflow-y-auto p-4 space-y-4" id="chat-messages">
+                {% for message in messages %}
+                <div class="flex {% if message.sender_id == session.user_id %}justify-end{% else %}justify-start{% endif %}">
+                    <div class="max-w-[70%] {% if message.sender_id == session.user_id %}bg-indigo-600 text-white{% else %}bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white{% endif %} rounded-lg px-4 py-2">
+                        <p class="text-sm">{{ message.content }}</p>
+                        <p class="text-xs mt-1 {% if message.sender_id == session.user_id %}text-indigo-200{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+                            {{ message.created_at }}
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Chat input -->
+            <div class="border-t border-gray-200 dark:border-gray-700 p-4">
+                <form id="message-form" class="flex space-x-4">
+                    <input type="text" id="message-input" class="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Écrivez votre message...">
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Envoyer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+    const socket = io();
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+    const chatMessages = document.getElementById('chat-messages');
+    const otherUserId = {{ other_user.id }};
+
+    // Scroll to bottom of chat
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Add message to chat
+    function addMessage(message, isSent = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `flex ${isSent ? 'justify-end' : 'justify-start'}`;
+        
+        const messageContent = document.createElement('div');
+        messageContent.className = `max-w-[70%] ${isSent ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'} rounded-lg px-4 py-2`;
+        
+        const messageText = document.createElement('p');
+        messageText.className = 'text-sm';
+        messageText.textContent = message.content;
+        
+        const messageTime = document.createElement('p');
+        messageTime.className = `text-xs mt-1 ${isSent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`;
+        messageTime.textContent = message.timestamp;
+        
+        messageContent.appendChild(messageText);
+        messageContent.appendChild(messageTime);
+        messageDiv.appendChild(messageContent);
+        chatMessages.appendChild(messageDiv);
+        
+        scrollToBottom();
+    }
+
+    // Handle form submission
+    messageForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const message = messageInput.value.trim();
+        
+        if (message) {
+            socket.emit('send_message', {
+                receiver_id: otherUserId,
+                message: message
+            });
+            messageInput.value = '';
+        }
+    });
+
+    // Handle received messages
+    socket.on('new_message', (message) => {
+        addMessage(message);
+    });
+
+    // Handle sent messages
+    socket.on('message_sent', (message) => {
+        addMessage(message, true);
+    });
+
+    // Scroll to bottom on load
+    scrollToBottom();
+</script>
+{% endblock %} 

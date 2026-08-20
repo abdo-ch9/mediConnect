@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Demandes de renouvellement - MediConnect{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Demandes de renouvellement d'ordonnances</h1>
+            
+            {% if refills %}
+            <div class="space-y-4">
+                {% for refill in refills %}
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                                {{ refill.patient_first_name }} {{ refill.patient_last_name }}
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                Date de l'ordonnance: {{ refill.prescription_date }}
+                            </p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                Médicaments: {{ refill.medications }}
+                            </p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                Notes du patient: {{ refill.notes }}
+                            </p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                Demandé le: {{ refill.request_date }}
+                            </p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <form action="{{ url_for('respond_to_refill_request', refill_id=refill.id) }}" method="POST" class="flex space-x-2">
+                                <input type="hidden" name="status" value="approved">
+                                <button type="submit" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                    Approuver
+                                </button>
+                            </form>
+                            <form action="{{ url_for('respond_to_refill_request', refill_id=refill.id) }}" method="POST" class="flex space-x-2">
+                                <input type="hidden" name="status" value="rejected">
+                                <button type="submit" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                    Refuser
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-10 text-gray-500 dark:text-gray-400">
+                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">Aucune demande</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Vous n'avez aucune demande de renouvellement en attente.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

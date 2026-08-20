@@ -1,0 +1,15 @@
+flask==2.3.3
+openai>=1.104.2,<2.0.0
+python-dotenv==1.0.0
+
+langchain==0.3.30
+langchain-community
+langchain-openai==0.3.35
+
+flask-wtf==1.2.1
+email-validator==2.1.0
+flask-mail==0.9.1
+requests==2.31.0
+werkzeug==2.3.7
+APScheduler
+Flask-SocketIO
