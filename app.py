@@ -320,6 +320,13 @@ scheduler.add_job(
 def index():
     return render_template('index.html')
 
+# Serve favicon for the legacy /favicon.ico browser request
+@app.route("/favicon.ico")
+def favicon():
+    return app.send_static_file("images/favicon.svg"), 200, {
+        "Content-Type": "image/svg+xml"
+    }
+
 # Authentication routes
 @app.route("/login", methods=["GET", "POST"])
 def login():

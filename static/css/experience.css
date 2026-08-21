@@ -1,0 +1,324 @@
+/* ============================================================
+   MediConnect — 3D Scroll Experience
+   Progressive enhancement styles. The 3D layer enhances the
+   existing homepage; everything here degrades gracefully to the
+   standard 2D fallback when JavaScript/WebGL is unavailable.
+   ============================================================ */
+
+:root {
+  --mc-navy: #050b18;
+  --mc-navy-2: #081226;
+  --mc-cyan: #38e1ff;
+  --mc-blue: #2f7bff;
+  --mc-glass: rgba(12, 30, 56, 0.45);
+  --mc-glass-border: rgba(120, 200, 255, 0.25);
+}
+
+/* ---- WebGL canvas (background layer) ---- */
+#experience-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: none;
+  touch-action: pan-y;
+}
+
+/* ---- Fixed UI overlay that holds the scene text ---- */
+.experience-ui {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  display: none;
+}
+.experience-ui .scene-section {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 9rem 1.5rem 4rem;
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+  will-change: opacity, transform;
+}
+.experience-ui .scene-section.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+/* Re-enable pointer events only for interactive bits */
+.experience-ui a,
+.experience-ui button {
+  pointer-events: auto;
+}
+
+/* ---- Scroll spacer (creates the 500-600vh scroll length) ---- */
+#experience-spacer {
+  display: none;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 600vh;
+}
+
+/* ---- Loading indicator ---- */
+#experience-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: var(--mc-navy);
+  transition: opacity 0.6s ease;
+}
+#experience-loader .loader-inner {
+  text-align: center;
+  color: #cfe8ff;
+  font-family: Inter, system-ui, sans-serif;
+}
+#experience-loader .loader-ring {
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(120, 200, 255, 0.25);
+  border-top-color: var(--mc-cyan);
+  animation: mc-spin 0.9s linear infinite;
+}
+@keyframes mc-spin { to { transform: rotate(360deg); } }
+body.experience-loading #experience-loader { display: flex; }
+body.experience-active #experience-loader { opacity: 0; pointer-events: none; }
+
+/* ---- Active state (3D running) ---- */
+body.experience-active {
+  background: var(--mc-navy);
+}
+body.experience-active #experience-canvas { display: block; }
+body.experience-active .experience-ui { display: block; }
+body.experience-active #experience-spacer { display: block; }
+body.experience-active #experience-fallback { display: none; }
+
+/* ---- Fallback (default: shown when no JS / reduced motion / low-end) ---- */
+#experience-fallback {
+  display: block;
+}
+body.experience-fallback-static #experience-fallback { display: block; }
+
+/* ============================================================
+   Scene typography + glass UI
+   ============================================================ */
+.scene-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mc-cyan);
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--mc-glass-border);
+  border-radius: 999px;
+  background: var(--mc-glass);
+  backdrop-filter: blur(8px);
+  margin-bottom: 1.5rem;
+}
+.scene-title {
+  font-family: Inter, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #f3f9ff;
+  text-shadow: 0 4px 40px rgba(0, 0, 0, 0.45);
+  font-size: clamp(2.2rem, 6vw, 4.6rem);
+  line-height: 1.05;
+  max-width: 16ch;
+  margin: 0 auto;
+}
+.scene-desc {
+  margin: 1.5rem auto 0;
+  max-width: 46ch;
+  color: rgba(207, 232, 255, 0.82);
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  line-height: 1.6;
+}
+.scene-actions {
+  margin-top: 2.2rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.btn-primary,
+.btn-ghost {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 600;
+  padding: 0.85rem 1.6rem;
+  border-radius: 0.7rem;
+  text-decoration: none;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--mc-cyan), var(--mc-blue));
+  color: #021326;
+  box-shadow: 0 10px 40px rgba(47, 123, 255, 0.35);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 50px rgba(47, 123, 255, 0.5);
+}
+.btn-ghost {
+  background: var(--mc-glass);
+  border: 1px solid var(--mc-glass-border);
+  color: #eaf5ff;
+  backdrop-filter: blur(8px);
+}
+.btn-ghost:hover {
+  background: rgba(20, 45, 80, 0.6);
+  transform: translateY(-2px);
+}
+
+/* ---- Real HTML chat mock (chat scene) ---- */
+.chat-mock {
+  pointer-events: auto;
+  width: min(440px, 92vw);
+  margin-top: 2rem;
+  background: var(--mc-glass);
+  border: 1px solid var(--mc-glass-border);
+  border-radius: 1.1rem;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  text-align: left;
+}
+.chat-mock__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid rgba(120, 200, 255, 0.15);
+}
+.chat-mock__avatar {
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--mc-cyan), var(--mc-blue));
+  color: #021326; font-weight: 700;
+}
+.chat-mock__status { font-size: 0.75rem; color: var(--mc-cyan); }
+.chat-mock__body { padding: 1.1rem; display: flex; flex-direction: column; gap: 0.7rem; }
+.bubble {
+  max-width: 80%;
+  padding: 0.7rem 0.95rem;
+  border-radius: 0.9rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.bubble--in {
+  align-self: flex-start;
+  background: rgba(20, 45, 80, 0.7);
+  color: #eaf5ff;
+  border-bottom-left-radius: 0.25rem;
+}
+.bubble--out {
+  align-self: flex-end;
+  background: linear-gradient(135deg, var(--mc-cyan), var(--mc-blue));
+  color: #021326;
+  border-bottom-right-radius: 0.25rem;
+}
+
+/* ---- Feature chips (ecosystem scene) ---- */
+.eco-grid {
+  margin-top: 2.4rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+  gap: 0.9rem;
+  width: min(640px, 92vw);
+}
+.eco-chip {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem;
+  background: var(--mc-glass);
+  border: 1px solid var(--mc-glass-border);
+  border-radius: 0.8rem;
+  color: #eaf5ff;
+  font-size: 0.92rem;
+  backdrop-filter: blur(8px);
+  text-decoration: none;
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+.eco-chip:hover { transform: translateY(-3px); border-color: var(--mc-cyan); }
+.eco-chip i { color: var(--mc-cyan); width: 20px; text-align: center; }
+
+/* ---- Scroll hint (hero) ---- */
+.scroll-hint {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(207, 232, 255, 0.7);
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+.scroll-hint .mouse {
+  width: 22px; height: 36px;
+  border: 2px solid rgba(120, 200, 255, 0.5);
+  border-radius: 14px;
+  position: relative;
+}
+.scroll-hint .mouse::after {
+  content: "";
+  position: absolute;
+  top: 6px; left: 50%;
+  width: 3px; height: 7px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+  background: var(--mc-cyan);
+  animation: mc-scroll 1.6s ease-in-out infinite;
+}
+@keyframes mc-scroll { 0%{opacity:0;transform:translateY(0)} 40%{opacity:1} 100%{opacity:0;transform:translateY(12px)} }
+
+/* ---- Progress rail ---- */
+#experience-progress {
+  position: fixed;
+  top: 0; left: 0;
+  height: 3px;
+  width: 0%;
+  z-index: 45;
+  background: linear-gradient(90deg, var(--mc-cyan), var(--mc-blue));
+  box-shadow: 0 0 16px rgba(56, 225, 255, 0.6);
+  display: none;
+}
+body.experience-active #experience-progress { display: block; }
+
+/* ============================================================
+   Reduced motion / low-end: never show the 3D layers.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  #experience-canvas,
+  .experience-ui,
+  #experience-spacer,
+  #experience-loader,
+  #experience-progress { display: none !important; }
+  #experience-fallback { display: block !important; }
+  .scene-eyebrow, .chat-mock, .eco-chip { backdrop-filter: none; }
+}
+
+@media (max-width: 640px) {
+  .experience-ui .scene-section { padding: 7rem 1.1rem 3rem; }
+}
