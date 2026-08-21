@@ -1,0 +1,126 @@
+/* 3D Experience Styles - Progressive Enhancement */
+
+#three-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#scroll-container {
+  position: relative;
+  z-index: 10;
+}
+
+.scroll-section {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 2rem;
+}
+
+.hero-content {
+  text-align: center;
+  max-width: 800px;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.final-cta {
+  text-align: center;
+  max-width: 700px;
+}
+
+.glass-panel {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(14, 165, 233, 0.22);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  background: linear-gradient(135deg, #0284c7, #0ea5e9);
+  color: white;
+  font-weight: 600;
+  border-radius: 9999px;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(14, 165, 233, 0.35);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 2rem;
+  background: transparent;
+  color: #0ea5e9;
+  font-weight: 600;
+  border-radius: 9999px;
+  text-decoration: none;
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.btn-secondary:hover {
+  background: rgba(14, 165, 233, 0.1);
+  border-color: #0ea5e9;
+}
+
+.mediconnect-fallback #three-canvas {
+  display: none;
+}
+
+.mediconnect-fallback .scroll-section {
+  background: linear-gradient(180deg, #0a0f1c 0%, #050a14 100%);
+}
+
+.mediconnect-fallback .hero-content h1,
+.mediconnect-fallback .final-cta h1 {
+  color: #ffffff;
+}
+
+.mediconnect-fallback .hero-content p,
+.mediconnect-fallback .final-cta p {
+  color: #94a3b8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-content,
+  .btn-primary,
+  .btn-secondary {
+    transition: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .scroll-section {
+    padding: 1rem;
+  }
+  
+  .glass-panel {
+    padding: 1.5rem;
+  }
+}
