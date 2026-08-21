@@ -225,14 +225,19 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Connect to Meta Llama 3.3 70B Instruct via OpenRouter
-llm = ChatOpenAI(
-    temperature=0.4, 
-    max_tokens=1000, 
-    model_name="meta-llama/llama-3.3-70b-instruct",
-    openai_api_base="https://openrouter.ai/api/v1",
-    openai_api_key=OPENAI_API_KEY
-)
+# Connect to Meta Llama 3.3 70B Instruct via OpenRouter.
+# Only build the client when a key is available so that a missing API key
+# cannot crash the import (and therefore the whole site) on Vercel.
+if OPENAI_API_KEY:
+    llm = ChatOpenAI(
+        temperature=0.4,
+        max_tokens=1000,
+        model_name="meta-llama/llama-3.3-70b-instruct",
+        openai_api_base="https://openrouter.ai/api/v1",
+        openai_api_key=OPENAI_API_KEY
+    )
+else:
+    llm = None
 
 # Create prompt for the LLM
 prompt = ChatPromptTemplate.from_messages([
@@ -702,6 +707,10 @@ def chat():
         # Make sure the user input is valid
         if not user_input or user_input.strip() == "":
             return "Veuillez poser une question médicale. 🩺"
+        
+        # The LLM client is only built when an API key is configured.
+        if llm is None:
+            return "Le service de chat n'est pas disponible pour le moment. Veuillez réessayer plus tard. ⚠️"
         
         # Use the LLM directly with an empty context
         response = llm.invoke(prompt.format(input=user_input, context=""))
@@ -1248,7 +1257,10 @@ def chatbot_response():
     try:
         data = request.get_json()
         user_message = data.get('message')
-        
+
+        if not OPENAI_API_KEY:
+            return jsonify({'error': 'Le service de chat n\'est pas configuré.'}), 503
+
         chat = ChatOpenAI(
             model="meta-llama/llama-3.3-70b-instruct",
             temperature=0.7,
