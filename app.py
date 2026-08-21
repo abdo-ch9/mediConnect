@@ -24,24 +24,38 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-OPENAI_API_KEY = os.getenv("OPENROUTER_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
 # Flask app instantiation
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)  # Generate a random secret key
 socketio = SocketIO(app)
 
-# API key configuration
-os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+# API key configuration (only set when present so a missing key cannot crash import)
+if OPENAI_API_KEY:
+    os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+
+# Base directory of the application
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Vercel's serverless filesystem is read-only except for /tmp, so keep the
+# database and uploaded files there. Override with DATABASE_PATH / UPLOAD_PATH if needed.
+IS_VERCEL = bool(os.getenv("VERCEL"))
+DB_PATH = os.getenv("DATABASE_PATH") or (
+    os.path.join("/tmp", "mediconnect.db") if IS_VERCEL else os.path.join(BASE_DIR, "mediconnect.db")
+)
+UPLOAD_PATH = os.getenv("UPLOAD_PATH") or (
+    os.path.join("/tmp", "uploads") if IS_VERCEL else os.path.join(BASE_DIR, "uploads")
+)
 
 # Configure upload folder
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+UPLOAD_FOLDER = UPLOAD_PATH
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Database setup
 def get_db_connection():
-    conn = sqlite3.connect('mediconnect.db')
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -319,13 +333,6 @@ scheduler.add_job(
 @app.route("/")
 def index():
     return render_template('index.html')
-
-# Serve favicon for the legacy /favicon.ico browser request
-@app.route("/favicon.ico")
-def favicon():
-    return app.send_static_file("images/favicon.svg"), 200, {
-        "Content-Type": "image/svg+xml"
-    }
 
 # Authentication routes
 @app.route("/login", methods=["GET", "POST"])
