@@ -3,6 +3,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
 const gsap = window.gsap;
 const ScrollTrigger = window.ScrollTrigger;
@@ -57,6 +59,9 @@ const SCENE_RANGES = [
 
 let renderer, scene, camera, composer, bloomPass, clock;
 let particles, pulse, aiGroup, ecoLines, heartTube, heartCurve;
+const mixers = [];
+let doctorPlaceholder = null;
+let patientPlaceholder = null;
 const dynamic = [];
 
 function init() {
@@ -87,6 +92,8 @@ function init() {
   buildLights();
   buildEnvironment();
   buildFigures();
+  loadDoctorModel();
+  loadPatientModel();
   buildHeartbeat();
   buildPanels();
   buildAppointmentCards();
@@ -154,13 +161,6 @@ function buildEnvironment() {
   grid.material.opacity = 0.25;
   scene.add(grid);
 
-  const platformGeo = new THREE.CylinderGeometry(9, 9.5, 0.3, 48);
-  const platformMat = new THREE.MeshStandardMaterial({ color: 0x0e2138, roughness: 0.6, metalness: 0.3, emissive: 0x07223f, emissiveIntensity: 0.4 });
-  const platform = new THREE.Mesh(platformGeo, platformMat);
-  platform.position.set(0, -1.25, -2);
-  platform.receiveShadow = true;
-  scene.add(platform);
-
 }
 
 function makeFigure(tint, isDoctor) {
@@ -208,187 +208,129 @@ function makeFigure(tint, isDoctor) {
   return g;
 }
 
-function makeDoctor() {
-  const g = new THREE.Group();
-  const skin = new THREE.MeshStandardMaterial({ color: 0xf2c9a6, roughness: 0.65 });
-  const coat = new THREE.MeshStandardMaterial({ color: 0xf4f7fb, roughness: 0.55, metalness: 0.04 });
-  const shirt = new THREE.MeshStandardMaterial({ color: COL.blue, roughness: 0.55 });
-  const pants = new THREE.MeshStandardMaterial({ color: 0x3f5675, roughness: 0.7 });
-  const shoeMat = new THREE.MeshStandardMaterial({ color: 0x232b36, roughness: 0.45 });
-  const hairMat = new THREE.MeshStandardMaterial({ color: 0x3a2c22, roughness: 0.85 });
-  const darkMat = new THREE.MeshStandardMaterial({ color: 0x10151c, roughness: 0.6 });
-  const metalMat = new THREE.MeshStandardMaterial({ color: 0xa9c2dc, metalness: 0.65, roughness: 0.3 });
-  const boardMat = new THREE.MeshStandardMaterial({ color: 0xe3edf6, roughness: 0.5 });
-  const paperMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 });
-  const eyeWhite = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
-  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x1b232c, roughness: 0.4 });
-
-  function makeHand() {
-    const h = new THREE.Group();
-    const palm = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.14, 0.05), skin);
-    h.add(palm);
-    const fg = new THREE.CapsuleGeometry(0.022, 0.1, 4, 8);
-    for (let i = -1; i <= 1; i++) {
-      const f = new THREE.Mesh(fg, skin);
-      f.position.set(i * 0.042, -0.12, 0);
-      h.add(f);
-    }
-    const thumb = new THREE.Mesh(fg, skin);
-    thumb.position.set(-0.085, -0.04, 0.02);
-    thumb.rotation.z = 0.7;
-    h.add(thumb);
-    return h;
-  }
-
-  for (const sx of [-0.22, 0.22]) {
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.14, 1.15, 16), pants);
-    leg.position.set(sx, -0.68, 0);
-    leg.castShadow = true;
-    g.add(leg);
-    const foot = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.15, 0.52), shoeMat);
-    foot.position.set(sx, -1.3, 0.13);
-    foot.castShadow = true;
-    g.add(foot);
-  }
-
-  const pelvis = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 0.4), pants);
-  pelvis.position.y = -0.08;
-  g.add(pelvis);
-
-  const shirtTorso = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 0.6, 8, 16), shirt);
-  shirtTorso.position.y = 0.46;
-  shirtTorso.castShadow = true;
-  g.add(shirtTorso);
-
-  const coatTorso = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 0.4, 8, 16), coat);
-  coatTorso.position.y = 0.45;
-  coatTorso.castShadow = true;
-  g.add(coatTorso);
-
-  const shirtV = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.46, 0.08), shirt);
-  shirtV.position.set(0, 0.62, 0.52);
-  g.add(shirtV);
-
-  const coatOpen = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.85, 0.05), darkMat);
-  coatOpen.position.set(0, 0.55, 0.56);
-  g.add(coatOpen);
-
-  const collar = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.12), coat);
-  collar.position.set(0, 0.96, 0.42);
-  g.add(collar);
-
-  const lapelL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.5, 0.06), coat);
-  lapelL.position.set(-0.15, 0.78, 0.46);
-  lapelL.rotation.z = 0.35;
-  g.add(lapelL);
-  const lapelR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.5, 0.06), coat);
-  lapelR.position.set(0.15, 0.78, 0.46);
-  lapelR.rotation.z = -0.35;
-  g.add(lapelR);
-
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.5, 16), skin);
-  neck.position.y = 1.18;
-  g.add(neck);
-
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.33, 24, 24), skin);
-  head.position.y = 1.62;
-  head.castShadow = true;
-  g.add(head);
-
-  const hair = new THREE.Mesh(new THREE.SphereGeometry(0.345, 20, 20, 0, Math.PI * 2, 0, Math.PI * 0.5), hairMat);
-  hair.position.set(0, 1.7, -0.02);
-  g.add(hair);
-
-  for (const ex of [-0.12, 0.12]) {
-    const ew = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 12), eyeWhite);
-    ew.position.set(ex, 1.66, 0.3);
-    g.add(ew);
-    const pup = new THREE.Mesh(new THREE.SphereGeometry(0.025, 10, 10), eyeMat);
-    pup.position.set(ex, 1.66, 0.335);
-    g.add(pup);
-  }
-  for (const ex of [-0.13, 0.13]) {
-    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.018, 0.02), hairMat);
-    brow.position.set(ex, 1.73, 0.31);
-    g.add(brow);
-  }
-  const nose = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.05), skin);
-  nose.position.set(0, 1.57, 0.33);
-  g.add(nose);
-  const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.025, 0.02), darkMat);
-  mouth.position.set(0, 1.52, 0.31);
-  g.add(mouth);
-
-  const lUpper = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.1, 0.5, 12), coat);
-  lUpper.position.set(-0.5, 0.72, 0);
-  lUpper.castShadow = true;
-  g.add(lUpper);
-  const lFore = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.5, 12), skin);
-  lFore.position.set(-0.5, 0.2, 0.02);
-  lFore.castShadow = true;
-  g.add(lFore);
-  const lHand = makeHand();
-  lHand.position.set(-0.5, -0.08, 0.04);
-  g.add(lHand);
-
-  const rUpper = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.1, 0.5, 12), coat);
-  rUpper.position.set(0.5, 0.72, 0);
-  rUpper.rotation.z = -0.5;
-  g.add(rUpper);
-  const rFore = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.08, 0.5, 12), skin);
-  rFore.position.set(0.42, 0.35, 0.42);
-  rFore.rotation.x = Math.PI / 2.2;
-  g.add(rFore);
-
-  const clip = new THREE.Group();
-  const board = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.6, 0.05), boardMat);
-  clip.add(board);
-  const paper = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.5, 0.02), paperMat);
-  paper.position.z = 0.035;
-  clip.add(paper);
-  const clamp = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.06, 0.07), metalMat);
-  clamp.position.set(0, 0.28, 0.04);
-  clip.add(clamp);
-  clip.position.set(0.44, 0.52, 0.72);
-  clip.rotation.set(-0.12, 0.2, 0.1);
-  g.add(clip);
-
-  const rHand = makeHand();
-  rHand.position.set(0.42, 0.33, 0.66);
-  rHand.rotation.x = Math.PI;
-  g.add(rHand);
-
-  const stethRing = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.025, 8, 24), metalMat);
-  stethRing.position.set(0, 1.0, 0.1);
-  stethRing.rotation.x = Math.PI / 2;
-  g.add(stethRing);
-  for (const sx of [-0.12, 0.12]) {
-    const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8), metalMat);
-    tube.position.set(sx, 0.72, 0.16);
-    tube.rotation.x = 0.2;
-    g.add(tube);
-  }
-  const chestPiece = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.05, 16), metalMat);
-  chestPiece.position.set(0, 0.5, 0.5);
-  g.add(chestPiece);
-
-  return g;
-}
-
 function buildFigures() {
   const doctor = makeFigure(COL.coat, true);
   doctor.position.copy(anchors.doctor);
+  doctor.position.y = 0.34;
   doctor.rotation.y = -Math.PI / 5;
   doctor.userData.isFigure = true;
   scene.add(doctor);
   dynamic.push(doctor);
+  doctorPlaceholder = doctor;
 
-  const patient = makeDoctor();
+  const patient = makeFigure(COL.patient, false);
   patient.position.copy(anchors.patient);
+  patient.scale.setScalar(1.3);
+  patient.position.y = 0.34;
   patient.rotation.y = Math.PI / 5;
   patient.userData.isFigure = true;
   scene.add(patient);
   dynamic.push(patient);
+  patientPlaceholder = patient;
+}
+
+function coreExtents(root) {
+  root.updateMatrixWorld(true);
+  const ys = [];
+  const v = new THREE.Vector3();
+  root.traverse((o) => {
+    if (o.isMesh && o.geometry && o.geometry.attributes.position) {
+      const pos = o.geometry.attributes.position;
+      const m = o.matrixWorld;
+      const step = Math.max(1, Math.floor(pos.count / 2000));
+      for (let i = 0; i < pos.count; i += step) {
+        v.fromBufferAttribute(pos, i).applyMatrix4(m);
+        ys.push(v.y);
+      }
+    }
+  });
+  if (ys.length < 2) return null;
+  ys.sort((a, b) => a - b);
+  return {
+    lo: ys[Math.floor(ys.length * 0.02)],
+    hi: ys[Math.floor(ys.length * 0.98)],
+  };
+}
+
+function placeModel(root, animations, anchor, targetH, rotationY, placeholder) {
+  root.traverse((o) => {
+    if (o.isMesh) {
+      o.castShadow = true;
+      o.receiveShadow = true;
+      if (o.material && 'envMapIntensity' in o.material) o.material.envMapIntensity = 1.0;
+    }
+  });
+
+  const box = new THREE.Box3().setFromObject(root);
+  const center = new THREE.Vector3();
+  box.getCenter(center);
+
+  const core = coreExtents(root);
+  let scale, loY;
+  if (core) {
+    const coreH = Math.max(0.001, core.hi - core.lo);
+    scale = targetH / coreH;
+    loY = core.lo;
+  } else {
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    scale = targetH / Math.max(0.001, size.y);
+    loY = box.min.y;
+  }
+
+  root.position.set(-center.x, -loY, -center.z);
+
+  const holder = new THREE.Group();
+  holder.add(root);
+  holder.scale.setScalar(scale);
+
+  const groundY = -1.35;
+  holder.position.set(anchor.x, groundY, anchor.z);
+  holder.rotation.y = rotationY;
+  scene.add(holder);
+
+  if (animations && animations.length) {
+    const m = new THREE.AnimationMixer(root);
+    m.clipAction(animations[0]).play();
+    mixers.push(m);
+  }
+
+  if (placeholder) {
+    scene.remove(placeholder);
+    const idx = dynamic.indexOf(placeholder);
+    if (idx !== -1) dynamic.splice(idx, 1);
+  }
+  return holder;
+}
+
+function loadDoctorModel() {
+  const loader = new GLTFLoader();
+  loader.load(
+    '/static/3d/doctor.glb',
+    (gltf) => {
+      placeModel(gltf.scene, gltf.animations, anchors.doctor, 5.0, -Math.PI / 5, doctorPlaceholder);
+      doctorPlaceholder = null;
+    },
+    undefined,
+    (err) => {
+      console.warn('[MediConnect] doctor.glb failed to load; keeping placeholder figure.', err);
+    }
+  );
+}
+
+function loadPatientModel() {
+  const loader = new FBXLoader();
+  loader.load(
+    '/static/3d/patient.fbx',
+    (fbx) => {
+      placeModel(fbx, fbx.animations, anchors.patient, 5.0, Math.PI / 5, patientPlaceholder);
+      patientPlaceholder = null;
+    },
+    undefined,
+    (err) => {
+      console.warn('[MediConnect] patient.fbx failed to load; keeping placeholder figure.', err);
+    }
+  );
 }
 
 function buildHeartbeat() {
@@ -761,6 +703,7 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
   updateScene(dt, t);
+  mixers.forEach((m) => m.update(dt));
   composer.render();
 }
 
