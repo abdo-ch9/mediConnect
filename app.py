@@ -81,6 +81,9 @@ def get_db_connection():
         conn.cursor_factory = psycopg2.extras.DictCursor
         return conn
     else:
+        db_dir = os.path.dirname(DB_PATH) if DB_PATH else None
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         return conn
@@ -121,7 +124,7 @@ def init_db():
         receiver_id INTEGER NOT NULL,
         subject TEXT NOT NULL,
         content TEXT NOT NULL,
-        is_read BOOLEAN DEFAULT 0,
+        is_read BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (sender_id) REFERENCES users (id),
         FOREIGN KEY (receiver_id) REFERENCES users (id)
