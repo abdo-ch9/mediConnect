@@ -78,6 +78,11 @@ function init() {
   scene = new THREE.Scene();
   const bgTexture = new THREE.TextureLoader().load('/static/images/mediconnect-bg.jpg');
   bgTexture.colorSpace = THREE.SRGBColorSpace;
+  bgTexture.generateMipmaps = false;
+  bgTexture.minFilter = THREE.LinearFilter;
+  bgTexture.magFilter = THREE.LinearFilter;
+  bgTexture.wrapS = THREE.ClampToEdgeWrapping;
+  bgTexture.wrapT = THREE.ClampToEdgeWrapping;
   scene.background = bgTexture;
   scene.fog = new THREE.FogExp2(COL.navy, 0.018);
 

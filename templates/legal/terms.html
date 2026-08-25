@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Conditions d'utilisation - MediConnect{% endblock %}
+
+{% block content %}
+<section class="bg-gradient-to-r from-primary-700 to-cyan-400 text-white">
+    <div class="container px-4 py-16 mx-auto">
+        <div class="max-w-3xl mx-auto text-center">
+            <h1 class="text-4xl font-extrabold mb-4">Conditions d'utilisation</h1>
+            <p class="text-xl">Règles et engagements pour l'utilisation de MediConnect.</p>
+        </div>
+    </div>
+</section>
+
+<section class="py-12 bg-white dark:bg-gray-900">
+    <div class="container px-4 mx-auto max-w-4xl prose dark:prose-invert">
+        <h2>1. Acceptation des conditions</h2>
+        <p>En utilisant MediConnect, vous acceptez les présentes conditions d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser le service.</p>
+
+        <h2>2. Description du service</h2>
+        <p>MediConnect est une plateforme mettant en relation patients et professionnels de santé. Le service inclut la prise de rendez-vous, un forum médical, un chat sécurisé et un assistant IA.</p>
+
+        <h2>3. Responsabilités</h2>
+        <p>Les informations médicales fournies par l'assistant IA sont indicatives et ne remplacent pas une consultation professionnelle. MediConnect ne saurait être tenu responsable de décisions prises sur la base de ces informations.</p>
+
+        <h2>4. Données personnelles</h2>
+        <p>Vos données sont traitées conformément à notre Politique de confidentialité. Vous gardez le contrôle de vos informations et pouvez demander leur suppression à tout moment.</p>
+
+        <h2>5. Contact</h2>
+        <p>Pour toute question : <a href="mailto:contact@mediconnect.fr" class="text-primary-600 hover:underline">contact@mediconnect.fr</a></p>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Politique de confidentialité - MediConnect{% endblock %}
+
+{% block content %}
+<section class="bg-gradient-to-r from-primary-700 to-cyan-400 text-white">
+    <div class="container px-4 py-16 mx-auto">
+        <div class="max-w-3xl mx-auto text-center">
+            <h1 class="text-4xl font-extrabold mb-4">Politique de confidentialité</h1>
+            <p class="text-xl">Comment nous protégeons et utilisons vos données.</p>
+        </div>
+    </div>
+</section>
+
+<section class="py-12 bg-white dark:bg-gray-900">
+    <div class="container px-4 mx-auto max-w-4xl prose dark:prose-invert">
+        <h2>1. Données collectées</h2>
+        <p>Nous collectons les informations que vous nous fournissez directement : nom, prénom, email, numéro de téléphone, rôle (patient/médecin) et les données liées à votre activité sur la plateforme.</p>
+
+        <h2>2. Utilisation des données</h2>
+        <p>Vos données sont utilisées pour fournir le service, améliorer l'expérience utilisateur, faciliter la communication entre patients et médecins, et envoyer des notifications importantes relatives à votre compte.</p>
+
+        <h2>3. Partage des données</h2>
+        <p>Nous ne vendons jamais vos données. Elles ne sont partagées qu'avec votre consentement explicite ou lorsque la loi l'exige.</p>
+
+        <h2>4. Sécurité</h2>
+        <p>Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles pour protéger vos données contre tout accès, modification ou divulgation non autorisés.</p>
+
+        <h2>5. Vos droits</h2>
+        <p>Vous pouvez accéder, modifier ou supprimer vos données personnelles à tout moment en nous contactant à <a href="mailto:contact@mediconnect.fr" class="text-primary-600 hover:underline">contact@mediconnect.fr</a>.</p>
+    </div>
+</section>
+{% endblock %}

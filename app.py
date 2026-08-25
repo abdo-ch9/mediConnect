@@ -747,21 +747,28 @@ def contact():
         email = request.form.get("email")
         subject = request.form.get("subject")
         message = request.form.get("message")
-        try:
-            body = f"""
-            <h2>Nouveau message de contact</h2>
-            <p><strong>Nom:</strong> {name}</p>
-            <p><strong>Email:</strong> {email}</p>
-            <p><strong>Sujet:</strong> {subject}</p>
-            <p><strong>Message:</strong><br>{message}</p>
-            """
-            send_email("abdelchpro@gmail.com", f"Contact MediConnect: {subject}", body)
+        body = f"""
+        <h2>Nouveau message de contact</h2>
+        <p><strong>Nom:</strong> {name}</p>
+        <p><strong>Email:</strong> {email}</p>
+        <p><strong>Sujet:</strong> {subject}</p>
+        <p><strong>Message:</strong><br>{message}</p>
+        """
+        sent = send_email("abdelchpro@gmail.com", f"Contact MediConnect: {subject}", body)
+        if sent:
             flash("Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.", "success")
-        except Exception as e:
-            print(f"Contact email error: {e}")
+        else:
             flash("Une erreur est survenue lors de l'envoi du message. Veuillez réessayer plus tard.", "error")
         return redirect(url_for('contact'))
     return render_template('contact.html')
+
+@app.route("/terms")
+def terms():
+    return render_template('legal/terms.html')
+
+@app.route("/privacy")
+def privacy():
+    return render_template('legal/privacy.html')
 
 @app.route("/doctor/new-appointment", methods=["GET", "POST"])
 @login_required
