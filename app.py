@@ -21,6 +21,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema import HumanMessage, SystemMessage
 import os
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 load_dotenv()
 
@@ -37,12 +38,16 @@ if OPENAI_API_KEY:
 # Base directory of the application
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Vercel's serverless filesystem is read-only except for /tmp, so keep the
-# database and uploaded files there. Override with DATABASE_PATH / UPLOAD_PATH if needed.
+# Database configuration
+# Use DATABASE_URL or POSTGRES_URL for PostgreSQL (e.g., on Vercel with Vercel Postgres)
+# Falls back to SQLite for local development
+DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL")
+IS_POSTGRES = DATABASE_URL and (DATABASE_URL.startswith("postgres://") or DATABASE_URL.startswith("postgresql://"))
+
+DB_PATH = os.getenv("DATABASE_PATH") or os.path.join(BASE_DIR, "mediconnect.db")
+
+# Upload path configuration
 IS_VERCEL = bool(os.getenv("VERCEL"))
-DB_PATH = os.getenv("DATABASE_PATH") or (
-    os.path.join("/tmp", "mediconnect.db") if IS_VERCEL else os.path.join(BASE_DIR, "mediconnect.db")
-)
 UPLOAD_PATH = os.getenv("UPLOAD_PATH") or (
     os.path.join("/tmp", "uploads") if IS_VERCEL else os.path.join(BASE_DIR, "uploads")
 )
@@ -53,20 +58,45 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Database setup
+def get_db_type():
+    return "postgresql" if IS_POSTGRES else "sqlite"
+
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    if IS_POSTGRES:
+        import psycopg2
+        import psycopg2.extras
+        parsed = urlparse(DATABASE_URL)
+        conn = psycopg2.connect(
+            host=parsed.hostname,
+            database=parsed.path[1:],
+            user=parsed.username,
+            password=parsed.password,
+            port=parsed.port or 5432
+        )
+        conn.cursor_factory = psycopg2.extras.DictCursor
+        return conn
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+def db_execute(conn, query, params=None):
+    if IS_POSTGRES:
+        query = query.replace("?", "%s")
+    if params:
+        return conn.cursor().execute(query, params)
+    return conn.cursor().execute(query)
 
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    pk = "SERIAL PRIMARY KEY" if IS_POSTGRES else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    
     # Create users table
-    cursor.execute('''
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {pk},
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         first_name TEXT NOT NULL,
@@ -79,9 +109,9 @@ def init_db():
     ''')
     
     # Create messages table
-    cursor.execute('''
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {pk},
         sender_id INTEGER NOT NULL,
         receiver_id INTEGER NOT NULL,
         subject TEXT NOT NULL,
@@ -94,9 +124,9 @@ def init_db():
     ''')
     
     # Create tasks table
-    cursor.execute('''
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {pk},
         doctor_id INTEGER NOT NULL,
         title TEXT NOT NULL,
         description TEXT,
@@ -109,9 +139,9 @@ def init_db():
     ''')
     
     # Create doctor_profiles table
-    cursor.execute('''
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS doctor_profiles (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {pk},
         user_id INTEGER NOT NULL,
         speciality TEXT,
         license_number TEXT,
@@ -120,9 +150,9 @@ def init_db():
     ''')
     
     # Create appointments table
-    cursor.execute('''
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS appointments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {pk},
         patient_id INTEGER NOT NULL,
         doctor_id INTEGER NOT NULL,
         date DATE NOT NULL,
@@ -137,9 +167,9 @@ def init_db():
     ''')
     
     # Create prescriptions table
-    cursor.execute('''
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS prescriptions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {pk},
         patient_id INTEGER NOT NULL,
         doctor_id INTEGER NOT NULL,
         date DATE NOT NULL,
@@ -152,9 +182,9 @@ def init_db():
     ''')
     
     # Create medical_records table
-    cursor.execute('''
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS medical_records (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {pk},
         patient_id INTEGER NOT NULL,
         doctor_id INTEGER NOT NULL,
         record_type TEXT NOT NULL,
@@ -167,9 +197,9 @@ def init_db():
     ''')
     
     # Create password_reset_tokens table
-    cursor.execute('''
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS password_reset_tokens (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {pk},
         user_id INTEGER NOT NULL,
         token TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -179,9 +209,9 @@ def init_db():
     ''')
     
     # Create prescription_refills table
-    cursor.execute('''
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS prescription_refills (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {pk},
         prescription_id INTEGER NOT NULL,
         patient_id INTEGER NOT NULL,
         doctor_id INTEGER NOT NULL,
@@ -196,9 +226,9 @@ def init_db():
     ''')
     
     # Create doctor_ratings table
-    cursor.execute('''
+    cursor.execute(f'''
     CREATE TABLE IF NOT EXISTS doctor_ratings (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id {pk},
         doctor_id INTEGER NOT NULL,
         patient_id INTEGER NOT NULL,
         rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
@@ -271,7 +301,7 @@ def send_email(to_email, subject, body):
 
 def send_appointment_reminder(appointment_id):
     conn = get_db_connection()
-    appointment = conn.execute('''
+    appointment = db_execute(conn,'''
         SELECT a.*, 
                p.email as patient_email, p.first_name as patient_first_name, p.last_name as patient_last_name,
                d.email as doctor_email, d.first_name as doctor_first_name, d.last_name as doctor_last_name
@@ -311,7 +341,7 @@ scheduler.start()
 def schedule_appointment_reminders():
     conn = get_db_connection()
     tomorrow = (datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')
-    appointments = conn.execute('''
+    appointments = db_execute(conn,'''
         SELECT id FROM appointments 
         WHERE date = ? AND status = 'scheduled'
     ''', (tomorrow,)).fetchall()
@@ -348,7 +378,7 @@ def login():
         remember = request.form.get("remember")
         
         conn = get_db_connection()
-        user = conn.execute('SELECT * FROM users WHERE email = ?', (email,)).fetchone()
+        user = db_execute(conn,'SELECT * FROM users WHERE email = ?', (email,)).fetchone()
         conn.close()
         
         if user and check_password_hash(user['password'], password):
@@ -363,7 +393,7 @@ def login():
             
             # Update last login time
             conn = get_db_connection()
-            conn.execute('UPDATE users SET last_login = ? WHERE id = ?', 
+            db_execute(conn,'UPDATE users SET last_login = ? WHERE id = ?', 
                         (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), user['id']))
             conn.commit()
             conn.close()
@@ -399,7 +429,7 @@ def register():
             return render_template('auth/register.html')
         
         conn = get_db_connection()
-        existing_user = conn.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
+        existing_user = db_execute(conn,'SELECT id FROM users WHERE email = ?', (email,)).fetchone()
         
         if existing_user:
             conn.close()
@@ -451,7 +481,7 @@ def reset_password_request():
         email = request.form.get("email")
         
         conn = get_db_connection()
-        user = conn.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
+        user = db_execute(conn,'SELECT id FROM users WHERE email = ?', (email,)).fetchone()
         
         if user:
             # Generate token
@@ -459,8 +489,8 @@ def reset_password_request():
             expires_at = datetime.now() + timedelta(hours=24)
             
             # Store token in database
-            conn.execute('DELETE FROM password_reset_tokens WHERE user_id = ?', (user['id'],))
-            conn.execute(
+            db_execute(conn,'DELETE FROM password_reset_tokens WHERE user_id = ?', (user['id'],))
+            db_execute(conn,
                 'INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, ?)',
                 (user['id'], token, expires_at.strftime("%Y-%m-%d %H:%M:%S"))
             )
@@ -483,7 +513,7 @@ def reset_password_request():
 @app.route("/reset-password/<token>", methods=["GET", "POST"])
 def reset_password(token):
     conn = get_db_connection()
-    token_data = conn.execute(
+    token_data = db_execute(conn,
         'SELECT user_id, expires_at FROM password_reset_tokens WHERE token = ?', 
         (token,)
     ).fetchone()
@@ -502,8 +532,8 @@ def reset_password(token):
             return render_template('auth/reset_password.html', token=token)
         
         hashed_password = generate_password_hash(password)
-        conn.execute('UPDATE users SET password = ? WHERE id = ?', (hashed_password, token_data['user_id']))
-        conn.execute('DELETE FROM password_reset_tokens WHERE user_id = ?', (token_data['user_id'],))
+        db_execute(conn,'UPDATE users SET password = ? WHERE id = ?', (hashed_password, token_data['user_id']))
+        db_execute(conn,'DELETE FROM password_reset_tokens WHERE user_id = ?', (token_data['user_id'],))
         conn.commit()
         conn.close()
         
@@ -517,46 +547,49 @@ def reset_password(token):
 @app.route("/patient-dashboard")
 @login_required
 def patient_dashboard():
-    if session.get('role') != 'patient':
+    if session.get('role', '').lower() != 'patient':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     
     conn = get_db_connection()
     
+    today = datetime.now().strftime('%Y-%m-%d')
+    thirty_days_ago = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+    
     # Get next appointment
-    next_appointment = conn.execute('''
+    next_appointment = db_execute(conn, '''
         SELECT a.*, u.first_name, u.last_name, d.speciality
         FROM appointments a 
         JOIN users u ON a.doctor_id = u.id 
         JOIN doctor_profiles d ON u.id = d.user_id
-        WHERE a.patient_id = ? AND a.date >= date('now')
+        WHERE a.patient_id = ? AND a.date >= ?
         ORDER BY a.date, a.time 
         LIMIT 1
-    ''', (session['user_id'],)).fetchone()
+    ''', (session['user_id'], today)).fetchone()
     
     # Get active prescriptions
-    active_prescriptions = conn.execute('''
+    active_prescriptions = db_execute(conn, '''
         SELECT COUNT(*) as count 
         FROM prescriptions 
-        WHERE patient_id = ? AND date >= date('now', '-30 days')
-    ''', (session['user_id'],)).fetchone()['count']
+        WHERE patient_id = ? AND date >= ?
+    ''', (session['user_id'], thirty_days_ago)).fetchone()['count']
     
     # Get unread messages
-    unread_messages = conn.execute('''
+    unread_messages = db_execute(conn,'''
         SELECT COUNT(*) as count 
         FROM messages 
         WHERE receiver_id = ? AND is_read = 0
     ''', (session['user_id'],)).fetchone()['count']
     
     # Get assigned doctors
-    assigned_doctors = conn.execute('''
+    assigned_doctors = db_execute(conn,'''
         SELECT COUNT(DISTINCT doctor_id) as count 
         FROM appointments 
         WHERE patient_id = ?
     ''', (session['user_id'],)).fetchone()['count']
     
     # Get medical records
-    medical_records = conn.execute('''
+    medical_records = db_execute(conn,'''
         SELECT mr.*, u.first_name, u.last_name
         FROM medical_records mr
         JOIN users u ON mr.doctor_id = u.id
@@ -577,14 +610,14 @@ def patient_dashboard():
 @app.route("/doctor-dashboard")
 @login_required
 def doctor_dashboard():
-    if session.get('role') != 'doctor':
+    if session.get('role', '').lower() != 'doctor':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     
     conn = get_db_connection()
     
     # Get total patients who have appointments with this doctor
-    total_patients = conn.execute('''
+    total_patients = db_execute(conn,'''
         SELECT COUNT(DISTINCT patient_id) as count 
         FROM appointments 
         WHERE doctor_id = ?
@@ -592,21 +625,21 @@ def doctor_dashboard():
     
     # Get today's appointments
     today = datetime.now().strftime('%Y-%m-%d')
-    today_appointments = conn.execute('''
+    today_appointments = db_execute(conn,'''
         SELECT COUNT(*) as count 
         FROM appointments 
         WHERE doctor_id = ? AND date = ?
     ''', (session['user_id'], today)).fetchone()['count']
     
     # Get unread messages
-    unread_messages = conn.execute('''
+    unread_messages = db_execute(conn,'''
         SELECT COUNT(*) as count 
         FROM messages 
         WHERE receiver_id = ? AND is_read = 0
     ''', (session['user_id'],)).fetchone()['count']
     
     # Get recent messages
-    recent_messages = conn.execute('''
+    recent_messages = db_execute(conn,'''
         SELECT m.*, 
                u.first_name as sender_first_name, 
                u.last_name as sender_last_name,
@@ -619,14 +652,14 @@ def doctor_dashboard():
     ''', (session['user_id'],)).fetchall()
     
     # Get pending tasks
-    pending_tasks = conn.execute('''
+    pending_tasks = db_execute(conn,'''
         SELECT COUNT(*) as count 
         FROM tasks 
         WHERE doctor_id = ? AND status = 'pending'
     ''', (session['user_id'],)).fetchone()['count']
     
     # Get upcoming appointments with patient details
-    upcoming_appointments = conn.execute('''
+    upcoming_appointments = db_execute(conn,'''
         SELECT a.*, u.first_name, u.last_name, u.phone, u.id as patient_id
         FROM appointments a 
         JOIN users u ON a.patient_id = u.id 
@@ -651,7 +684,7 @@ def chat_list():
     conn = get_db_connection()
     
     # Get all conversations for the current user
-    conversations = conn.execute('''
+    conversations = db_execute(conn,'''
         WITH last_messages AS (
             SELECT 
                 CASE 
@@ -773,7 +806,7 @@ def privacy():
 @app.route("/doctor/new-appointment", methods=["GET", "POST"])
 @login_required
 def new_appointment():
-    if session.get('role') != 'doctor':
+    if session.get('role', '').lower() != 'doctor':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     
@@ -793,8 +826,8 @@ def new_appointment():
         appointment_id = cursor.lastrowid
         
         # Get email addresses
-        patient = conn.execute('SELECT email, first_name, last_name FROM users WHERE id = ?', (patient_id,)).fetchone()
-        doctor = conn.execute('SELECT email, first_name, last_name FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+        patient = db_execute(conn,'SELECT email, first_name, last_name FROM users WHERE id = ?', (patient_id,)).fetchone()
+        doctor = db_execute(conn,'SELECT email, first_name, last_name FROM users WHERE id = ?', (session['user_id'],)).fetchone()
         
         # Send confirmation emails
         patient_body = f"""
@@ -822,15 +855,32 @@ def new_appointment():
         return redirect(url_for('doctor_dashboard'))
     
     conn = get_db_connection()
-    patients = conn.execute('SELECT * FROM users WHERE role = ?', ('patient',)).fetchall()
+    patients = db_execute(conn,'SELECT * FROM users WHERE LOWER(role) = ?', ('patient',)).fetchall()
     conn.close()
     
     return render_template('doctor/new_appointment.html', patients=patients)
 
+@app.route("/doctor/appointments")
+@login_required
+def doctor_appointments():
+    if session.get('role', '').lower() != 'doctor':
+        flash("Accès non autorisé.", "error")
+        return redirect(url_for('index'))
+    conn = get_db_connection()
+    appointments = db_execute(conn,'''
+        SELECT a.*, u.first_name, u.last_name, u.phone, u.id as patient_id
+        FROM appointments a
+        JOIN users u ON a.patient_id = u.id
+        WHERE a.doctor_id = ?
+        ORDER BY a.date DESC, a.time DESC
+    ''', (session['user_id'],)).fetchall()
+    conn.close()
+    return render_template('doctor/appointments.html', appointments=appointments)
+
 @app.route("/doctor/new-prescription", methods=["GET", "POST"])
 @login_required
 def new_prescription():
-    if session.get('role') != 'doctor':
+    if session.get('role', '').lower() != 'doctor':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     
@@ -841,7 +891,7 @@ def new_prescription():
         notes = request.form.get("notes")
         
         conn = get_db_connection()
-        conn.execute(
+        db_execute(conn,
             'INSERT INTO prescriptions (patient_id, doctor_id, date, medications, notes) VALUES (?, ?, ?, ?, ?)',
             (patient_id, session['user_id'], date, json.dumps(medications), notes)
         )
@@ -857,11 +907,11 @@ def new_prescription():
     
     if patient_id:
         # Get specific patient
-        patient = conn.execute('SELECT * FROM users WHERE id = ? AND role = ?', (patient_id, 'patient')).fetchone()
+        patient = db_execute(conn,'SELECT * FROM users WHERE id = ? AND LOWER(role) = ?', (patient_id, 'patient')).fetchone()
         patients = [patient] if patient else []
     else:
         # Get all patients
-        patients = conn.execute('SELECT * FROM users WHERE role = ?', ('patient',)).fetchall()
+        patients = db_execute(conn,'SELECT * FROM users WHERE LOWER(role) = ?', ('patient',)).fetchall()
     
     conn.close()
     
@@ -870,7 +920,7 @@ def new_prescription():
 @app.route("/doctor/add-record", methods=["GET", "POST"])
 @login_required
 def add_record():
-    if session.get('role') != 'doctor':
+    if session.get('role', '').lower() != 'doctor':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     
@@ -888,7 +938,7 @@ def add_record():
             file_path = None
         
         conn = get_db_connection()
-        conn.execute(
+        db_execute(conn,
             'INSERT INTO medical_records (patient_id, doctor_id, record_type, description, file_path) VALUES (?, ?, ?, ?, ?)',
             (patient_id, session['user_id'], record_type, description, file_path)
         )
@@ -899,7 +949,7 @@ def add_record():
         return redirect(url_for('doctor_dashboard'))
     
     conn = get_db_connection()
-    patients = conn.execute('SELECT * FROM users WHERE role = ?', ('patient',)).fetchall()
+    patients = db_execute(conn,'SELECT * FROM users WHERE LOWER(role) = ?', ('patient',)).fetchall()
     conn.close()
     
     return render_template('doctor/add_record.html', patients=patients)
@@ -907,16 +957,16 @@ def add_record():
 @app.route("/patient/new-appointment", methods=["GET", "POST"])
 @login_required
 def patient_new_appointment():
-    if session.get('role') != 'patient':
+    if session.get('role', '').lower() != 'patient':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     conn = get_db_connection()
     # List all doctors
-    doctors = conn.execute('''
+    doctors = db_execute(conn,'''
         SELECT u.id, u.first_name, u.last_name, d.speciality
         FROM users u
         JOIN doctor_profiles d ON u.id = d.user_id
-        WHERE u.role = 'doctor'
+        WHERE LOWER(u.role) = 'doctor'
     ''').fetchall()
     if request.method == "POST":
         doctor_id = request.form.get("doctor_id")
@@ -924,7 +974,7 @@ def patient_new_appointment():
         time = request.form.get("appointment_time")
         department = request.form.get("department")
         reason = request.form.get("reason")
-        conn.execute(
+        db_execute(conn,
             'INSERT INTO appointments (patient_id, doctor_id, date, time, department, reason) VALUES (?, ?, ?, ?, ?, ?)',
             (session['user_id'], doctor_id, date, time, department, reason)
         )
@@ -935,14 +985,32 @@ def patient_new_appointment():
     conn.close()
     return render_template('patient/new_appointment.html', doctors=doctors)
 
-@app.route("/patient/prescriptions")
+@app.route("/patient/appointments")
 @login_required
-def patient_prescriptions():
-    if session.get('role') != 'patient':
+def patient_appointments():
+    if session.get('role', '').lower() != 'patient':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     conn = get_db_connection()
-    prescriptions = conn.execute('''
+    appointments = db_execute(conn,'''
+        SELECT a.*, u.first_name, u.last_name, d.speciality
+        FROM appointments a
+        JOIN users u ON a.doctor_id = u.id
+        JOIN doctor_profiles d ON u.id = d.user_id
+        WHERE a.patient_id = ?
+        ORDER BY a.date DESC, a.time DESC
+    ''', (session['user_id'],)).fetchall()
+    conn.close()
+    return render_template('patient/appointments.html', appointments=appointments)
+
+@app.route("/patient/prescriptions")
+@login_required
+def patient_prescriptions():
+    if session.get('role', '').lower() != 'patient':
+        flash("Accès non autorisé.", "error")
+        return redirect(url_for('index'))
+    conn = get_db_connection()
+    prescriptions = db_execute(conn,'''
         SELECT p.*, u.first_name, u.last_name
         FROM prescriptions p
         JOIN users u ON p.doctor_id = u.id
@@ -955,11 +1023,11 @@ def patient_prescriptions():
 @app.route("/patient/messages")
 @login_required
 def patient_messages():
-    if session.get('role') != 'patient':
+    if session.get('role', '').lower() != 'patient':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     conn = get_db_connection()
-    messages = conn.execute('''
+    messages = db_execute(conn,'''
         SELECT m.*, u.first_name, u.last_name
         FROM messages m
         JOIN users u ON m.sender_id = u.id
@@ -972,20 +1040,32 @@ def patient_messages():
 @app.route("/patient/doctors")
 @login_required
 def patient_doctors():
-    if session.get('role') != 'patient':
+    if session.get('role', '').lower() != 'patient':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     conn = get_db_connection()
-    # Get all doctors with their specialties
-    doctors = conn.execute('''
-        SELECT u.id, u.first_name, u.last_name, d.speciality,
-               (SELECT COUNT(*) FROM appointments WHERE doctor_id = u.id AND patient_id = ?) as is_my_doctor
-        FROM users u
-        JOIN doctor_profiles d ON u.id = d.user_id
-        WHERE u.role = 'doctor'
-    ''', (session['user_id'],)).fetchall()
+    search = request.args.get('search', '').strip()
+    
+    if search:
+        search_pattern = f"%{search.lower()}%"
+        doctors = db_execute(conn,'''
+            SELECT u.id, u.first_name, u.last_name, d.speciality,
+                   (SELECT COUNT(*) FROM appointments WHERE doctor_id = u.id AND patient_id = ?) as is_my_doctor
+            FROM users u
+            JOIN doctor_profiles d ON u.id = d.user_id
+            WHERE LOWER(u.role) = 'doctor'
+              AND (LOWER(u.first_name) LIKE ? OR LOWER(u.last_name) LIKE ? OR LOWER(d.speciality) LIKE ?)
+        ''', (session['user_id'], search_pattern, search_pattern, search_pattern)).fetchall()
+    else:
+        doctors = db_execute(conn,'''
+            SELECT u.id, u.first_name, u.last_name, d.speciality,
+                   (SELECT COUNT(*) FROM appointments WHERE doctor_id = u.id AND patient_id = ?) as is_my_doctor
+            FROM users u
+            JOIN doctor_profiles d ON u.id = d.user_id
+            WHERE LOWER(u.role) = 'doctor'
+        ''', (session['user_id'],)).fetchall()
     conn.close()
-    return render_template('patient/doctors.html', doctors=doctors)
+    return render_template('patient/doctors.html', doctors=doctors, search=search)
 
 # Chat functionality
 @socketio.on('connect')
@@ -1017,7 +1097,7 @@ def handle_message(data):
     conn.commit()
     
     # Get sender info
-    sender = conn.execute('SELECT first_name, last_name FROM users WHERE id = ?', (sender_id,)).fetchone()
+    sender = db_execute(conn,'SELECT first_name, last_name FROM users WHERE id = ?', (sender_id,)).fetchone()
     
     # Prepare message data
     message_data = {
@@ -1039,14 +1119,14 @@ def handle_message(data):
 @login_required
 def private_chat(user_id):
     conn = get_db_connection()
-    other_user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    other_user = db_execute(conn,'SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
     
     if not other_user:
         flash("Utilisateur non trouvé.", "error")
         return redirect(url_for('chat_list'))
     
     # Get chat history
-    messages = conn.execute('''
+    messages = db_execute(conn,'''
         SELECT m.*, 
                s.first_name as sender_first_name, s.last_name as sender_last_name,
                r.first_name as receiver_first_name, r.last_name as receiver_last_name
@@ -1059,7 +1139,7 @@ def private_chat(user_id):
     ''', (session['user_id'], user_id, user_id, session['user_id'])).fetchall()
     
     # Mark messages as read
-    conn.execute('''
+    db_execute(conn,'''
         UPDATE messages 
         SET is_read = 1 
         WHERE receiver_id = ? AND sender_id = ? AND is_read = 0
@@ -1075,14 +1155,14 @@ def private_chat(user_id):
 @app.route("/patient/prescription/<int:prescription_id>/refill", methods=["POST"])
 @login_required
 def request_prescription_refill(prescription_id):
-    if session.get('role') != 'patient':
+    if session.get('role', '').lower() != 'patient':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     
     notes = request.form.get('notes', '')
     
     conn = get_db_connection()
-    prescription = conn.execute('''
+    prescription = db_execute(conn,'''
         SELECT * FROM prescriptions WHERE id = ? AND patient_id = ?
     ''', (prescription_id, session['user_id'])).fetchone()
     
@@ -1090,16 +1170,16 @@ def request_prescription_refill(prescription_id):
         flash("Ordonnance non trouvée.", "error")
         return redirect(url_for('patient_prescriptions'))
     
-    conn.execute('''
+    db_execute(conn,'''
         INSERT INTO prescription_refills (prescription_id, patient_id, doctor_id, notes)
         VALUES (?, ?, ?, ?)
     ''', (prescription_id, session['user_id'], prescription['doctor_id'], notes))
     conn.commit()
     
     # Send email notification to doctor
-    doctor = conn.execute('SELECT email, first_name, last_name FROM users WHERE id = ?', 
+    doctor = db_execute(conn,'SELECT email, first_name, last_name FROM users WHERE id = ?', 
                          (prescription['doctor_id'],)).fetchone()
-    patient = conn.execute('SELECT first_name, last_name FROM users WHERE id = ?', 
+    patient = db_execute(conn,'SELECT first_name, last_name FROM users WHERE id = ?', 
                           (session['user_id'],)).fetchone()
     
     email_body = f"""
@@ -1118,12 +1198,12 @@ def request_prescription_refill(prescription_id):
 @app.route("/doctor/prescription-refills")
 @login_required
 def prescription_refills():
-    if session.get('role') != 'doctor':
+    if session.get('role', '').lower() != 'doctor':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     
     conn = get_db_connection()
-    refills = conn.execute('''
+    refills = db_execute(conn,'''
         SELECT r.*, 
                p.first_name as patient_first_name, p.last_name as patient_last_name,
                pr.medications, pr.date as prescription_date
@@ -1140,7 +1220,7 @@ def prescription_refills():
 @app.route("/doctor/prescription-refill/<int:refill_id>/respond", methods=["POST"])
 @login_required
 def respond_to_refill_request(refill_id):
-    if session.get('role') != 'doctor':
+    if session.get('role', '').lower() != 'doctor':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     
@@ -1148,7 +1228,7 @@ def respond_to_refill_request(refill_id):
     response_notes = request.form.get('notes', '')
     
     conn = get_db_connection()
-    refill = conn.execute('''
+    refill = db_execute(conn,'''
         SELECT r.*, p.email as patient_email, p.first_name as patient_first_name, p.last_name as patient_last_name
         FROM prescription_refills r
         JOIN users p ON r.patient_id = p.id
@@ -1159,7 +1239,7 @@ def respond_to_refill_request(refill_id):
         flash("Demande non trouvée.", "error")
         return redirect(url_for('prescription_refills'))
     
-    conn.execute('''
+    db_execute(conn,'''
         UPDATE prescription_refills 
         SET status = ?, notes = ?, response_date = CURRENT_TIMESTAMP
         WHERE id = ?
@@ -1183,7 +1263,7 @@ def respond_to_refill_request(refill_id):
 @app.route("/patient/doctor/<int:doctor_id>/rate", methods=["POST"])
 @login_required
 def rate_doctor(doctor_id):
-    if session.get('role') != 'patient':
+    if session.get('role', '').lower() != 'patient':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     
@@ -1196,7 +1276,7 @@ def rate_doctor(doctor_id):
     
     conn = get_db_connection()
     # Check if patient has had appointments with this doctor
-    has_appointments = conn.execute('''
+    has_appointments = db_execute(conn,'''
         SELECT COUNT(*) as count 
         FROM appointments 
         WHERE patient_id = ? AND doctor_id = ? AND status = 'completed'
@@ -1207,19 +1287,19 @@ def rate_doctor(doctor_id):
         return redirect(url_for('patient_doctors'))
     
     # Check if patient has already rated this doctor
-    existing_rating = conn.execute('''
+    existing_rating = db_execute(conn,'''
         SELECT id FROM doctor_ratings 
         WHERE patient_id = ? AND doctor_id = ?
     ''', (session['user_id'], doctor_id)).fetchone()
     
     if existing_rating:
-        conn.execute('''
+        db_execute(conn,'''
             UPDATE doctor_ratings 
             SET rating = ?, comment = ?, created_at = CURRENT_TIMESTAMP
             WHERE id = ?
         ''', (rating, comment, existing_rating['id']))
     else:
-        conn.execute('''
+        db_execute(conn,'''
             INSERT INTO doctor_ratings (doctor_id, patient_id, rating, comment)
             VALUES (?, ?, ?, ?)
         ''', (doctor_id, session['user_id'], rating, comment))
@@ -1233,12 +1313,12 @@ def rate_doctor(doctor_id):
 @app.route("/doctor/ratings")
 @login_required
 def doctor_ratings():
-    if session.get('role') != 'doctor':
+    if session.get('role', '').lower() != 'doctor':
         flash("Accès non autorisé.", "error")
         return redirect(url_for('index'))
     
     conn = get_db_connection()
-    ratings = conn.execute('''
+    ratings = db_execute(conn,'''
         SELECT r.*, 
                p.first_name as patient_first_name, p.last_name as patient_last_name
         FROM doctor_ratings r
@@ -1248,7 +1328,7 @@ def doctor_ratings():
     ''', (session['user_id'],)).fetchall()
     
     # Calculate average rating
-    avg_rating = conn.execute('''
+    avg_rating = db_execute(conn,'''
         SELECT AVG(rating) as avg_rating 
         FROM doctor_ratings 
         WHERE doctor_id = ?
