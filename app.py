@@ -44,13 +44,18 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL")
 IS_POSTGRES = DATABASE_URL and (DATABASE_URL.startswith("postgres://") or DATABASE_URL.startswith("postgresql://"))
 
-DB_PATH = os.getenv("DATABASE_PATH") or os.path.join(BASE_DIR, "mediconnect.db")
-
 # Upload path configuration
 IS_VERCEL = bool(os.getenv("VERCEL"))
 UPLOAD_PATH = os.getenv("UPLOAD_PATH") or (
     os.path.join("/tmp", "uploads") if IS_VERCEL else os.path.join(BASE_DIR, "uploads")
 )
+
+if IS_POSTGRES:
+    DB_PATH = None
+else:
+    DB_PATH = os.getenv("DATABASE_PATH") or (
+        os.path.join("/tmp", "mediconnect.db") if IS_VERCEL else os.path.join(BASE_DIR, "mediconnect.db")
+    )
 
 # Configure upload folder
 UPLOAD_FOLDER = UPLOAD_PATH
