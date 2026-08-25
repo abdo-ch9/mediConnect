@@ -4,7 +4,7 @@
 
 {% block content %}
 <!-- Hero Section -->
-<section class="bg-gradient-to-r from-sky-400 to-blue-600 text-white">
+<section class="bg-gradient-to-r from-primary-700 to-cyan-400 text-white">
     <div class="container px-4 py-16 mx-auto">
         <div class="max-w-3xl mx-auto text-center">
             <h1 class="text-4xl font-extrabold mb-4">Nos Services</h1>
@@ -50,12 +50,7 @@
                 </div>
                 <p class="text-gray-600 dark:text-gray-400">Posez vos questions médicales à notre assistant IA disponible 24/7. Obtenez des informations fiables sur les symptômes, les traitements et les conseils de prévention.</p>
                 <div class="mt-4">
-                    <a href="{{ url_for('chatbot') }}" class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium inline-flex items-center">
-                        Essayer maintenant
-                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </a>
+                    <a href="{{ url_for('chatbot') }}" class="btn-primary">Essayer maintenant</a>
                 </div>
             </div>
 

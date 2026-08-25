@@ -11,14 +11,11 @@ const ScrollTrigger = window.ScrollTrigger;
 const Lenis = window.Lenis;
 
 const COL = {
-  navy: 0x050b18,
-  navy2: 0x081226,
-  cyan: 0x38e1ff,
-  blue: 0x2f7bff,
+  navy: 0x0b1f3a,
+  navy2: 0x0e2a4a,
+  cyan: 0x38bdf8,
+  blue: 0x2563eb,
   white: 0xeaf5ff,
-  skin: 0xe8c4a8,
-  coat: 0x2f6fb0,
-  patient: 0x9fb8d6,
 };
 
 const state = {
@@ -58,10 +55,8 @@ const SCENE_RANGES = [
 ];
 
 let renderer, scene, camera, composer, bloomPass, clock;
-let particles, pulse, aiGroup, ecoLines, heartTube, heartCurve;
+let pulse, aiGroup, ecoLines, heartTube, heartCurve;
 const mixers = [];
-let doctorPlaceholder = null;
-let patientPlaceholder = null;
 const dynamic = [];
 
 function init() {
@@ -81,7 +76,9 @@ function init() {
   renderer.toneMappingExposure = 1.05;
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(COL.navy);
+  const bgTexture = new THREE.TextureLoader().load('/static/images/mediconnect-bg.jpg');
+  bgTexture.colorSpace = THREE.SRGBColorSpace;
+  scene.background = bgTexture;
   scene.fog = new THREE.FogExp2(COL.navy, 0.018);
 
   camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 400);
@@ -91,7 +88,6 @@ function init() {
 
   buildLights();
   buildEnvironment();
-  buildFigures();
   loadDoctorModel();
   loadPatientModel();
   buildHeartbeat();
@@ -100,7 +96,6 @@ function init() {
   buildRecords();
   buildAINetwork();
   buildEcosystemLines();
-  buildParticles();
 
   setupComposer();
   setupScroll();
@@ -117,10 +112,10 @@ function init() {
 }
 
 function buildLights() {
-  scene.add(new THREE.HemisphereLight(0x4a78b0, 0x05070d, 0.55));
-  scene.add(new THREE.AmbientLight(0x223a5c, 0.4));
+  scene.add(new THREE.HemisphereLight(0x6ea8e0, 0x0b1020, 0.75));
+  scene.add(new THREE.AmbientLight(0x2a4a72, 0.5));
 
-  const key = new THREE.DirectionalLight(0xcfe8ff, 1.4);
+  const key = new THREE.DirectionalLight(0xdcefff, 1.5);
   key.position.set(8, 16, 12);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
@@ -133,15 +128,15 @@ function buildLights() {
   key.shadow.bias = -0.0005;
   scene.add(key);
 
-  const cyan = new THREE.PointLight(COL.cyan, 18, 40, 2);
+  const cyan = new THREE.PointLight(COL.cyan, 16, 40, 2);
   cyan.position.set(0, 4, -16);
   scene.add(cyan);
 
-  const blue = new THREE.PointLight(COL.blue, 26, 50, 2);
+  const blue = new THREE.PointLight(COL.blue, 24, 50, 2);
   blue.position.set(0, 5, -64);
   scene.add(blue);
 
-  const fill = new THREE.PointLight(0x7fd0ff, 8, 30, 2);
+  const fill = new THREE.PointLight(0x60a5fa, 9, 34, 2);
   fill.position.set(-6, 3, 4);
   scene.add(fill);
 }
@@ -161,72 +156,6 @@ function buildEnvironment() {
   grid.material.opacity = 0.25;
   scene.add(grid);
 
-}
-
-function makeFigure(tint, isDoctor) {
-  const g = new THREE.Group();
-  const bodyMat = new THREE.MeshStandardMaterial({ color: tint, roughness: 0.55, metalness: 0.15 });
-  const skinMat = new THREE.MeshStandardMaterial({ color: COL.skin, roughness: 0.7 });
-
-  const legs = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.6, 1.5, 16), bodyMat);
-  legs.position.y = -0.55;
-  legs.castShadow = true;
-  g.add(legs);
-
-  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.62, 1.1, 6, 16), bodyMat);
-  torso.position.y = 0.85;
-  torso.castShadow = true;
-  g.add(torso);
-
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 24, 24), skinMat);
-  head.position.y = 1.95;
-  head.castShadow = true;
-  g.add(head);
-
-  const cross = new THREE.Mesh(
-    new THREE.BoxGeometry(0.5, 0.16, 0.06),
-    new THREE.MeshStandardMaterial({ color: COL.cyan, emissive: COL.cyan, emissiveIntensity: 1.4, roughness: 0.4 })
-  );
-  cross.position.set(0, 1.0, 0.62);
-  g.add(cross);
-  const crossV = cross.clone();
-  crossV.geometry = new THREE.BoxGeometry(0.16, 0.5, 0.06);
-  g.add(crossV);
-
-  if (isDoctor) {
-    const steth = new THREE.Mesh(
-      new THREE.TorusGeometry(0.18, 0.04, 8, 24),
-      new THREE.MeshStandardMaterial({ color: 0x0c4a6e, metalness: 0.6, roughness: 0.3 })
-    );
-    steth.position.set(0.25, 0.7, 0.6);
-    steth.rotation.x = Math.PI / 2;
-    g.add(steth);
-  }
-
-  g.userData.cross = cross;
-  g.userData.crossV = crossV;
-  return g;
-}
-
-function buildFigures() {
-  const doctor = makeFigure(COL.coat, true);
-  doctor.position.copy(anchors.doctor);
-  doctor.position.y = 0.34;
-  doctor.rotation.y = -Math.PI / 5;
-  doctor.userData.isFigure = true;
-  scene.add(doctor);
-  dynamic.push(doctor);
-  doctorPlaceholder = doctor;
-
-  const patient = makeFigure(COL.patient, false);
-  patient.position.copy(anchors.patient);
-  patient.scale.setScalar(1.3);
-  patient.position.y = 0.34;
-  patient.rotation.y = Math.PI / 5;
-  patient.userData.isFigure = true;
-  scene.add(patient);
-  dynamic.push(patient);
-  patientPlaceholder = patient;
 }
 
 function coreExtents(root) {
@@ -252,7 +181,17 @@ function coreExtents(root) {
   };
 }
 
-function placeModel(root, animations, anchor, targetH, rotationY, placeholder) {
+function addModelCircle(anchor, groundY) {
+  const geo = new THREE.RingGeometry(1.05, 1.15, 64);
+  const mat = new THREE.MeshStandardMaterial({ color: COL.cyan, emissive: COL.cyan, emissiveIntensity: 0.7, roughness: 0.4, side: THREE.DoubleSide });
+  const ring = new THREE.Mesh(geo, mat);
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.set(anchor.x, groundY - 0.02, anchor.z);
+  scene.add(ring);
+  return ring;
+}
+
+function placeModel(root, animations, anchor, targetH, rotationY) {
   root.traverse((o) => {
     if (o.isMesh) {
       o.castShadow = true;
@@ -288,6 +227,7 @@ function placeModel(root, animations, anchor, targetH, rotationY, placeholder) {
   holder.position.set(anchor.x, groundY, anchor.z);
   holder.rotation.y = rotationY;
   scene.add(holder);
+  addModelCircle(anchor, groundY);
 
   if (animations && animations.length) {
     const m = new THREE.AnimationMixer(root);
@@ -295,11 +235,6 @@ function placeModel(root, animations, anchor, targetH, rotationY, placeholder) {
     mixers.push(m);
   }
 
-  if (placeholder) {
-    scene.remove(placeholder);
-    const idx = dynamic.indexOf(placeholder);
-    if (idx !== -1) dynamic.splice(idx, 1);
-  }
   return holder;
 }
 
@@ -308,12 +243,11 @@ function loadDoctorModel() {
   loader.load(
     '/static/3d/doctor.glb',
     (gltf) => {
-      placeModel(gltf.scene, gltf.animations, anchors.doctor, 5.0, -Math.PI / 5, doctorPlaceholder);
-      doctorPlaceholder = null;
+      placeModel(gltf.scene, gltf.animations, anchors.doctor, 5.0, -Math.PI / 5);
     },
     undefined,
     (err) => {
-      console.warn('[MediConnect] doctor.glb failed to load; keeping placeholder figure.', err);
+      console.warn('[MediConnect] doctor.glb failed to load.', err);
     }
   );
 }
@@ -323,12 +257,11 @@ function loadPatientModel() {
   loader.load(
     '/static/3d/patient.fbx',
     (fbx) => {
-      placeModel(fbx, fbx.animations, anchors.patient, 5.0, Math.PI / 5, patientPlaceholder);
-      patientPlaceholder = null;
+      placeModel(fbx, fbx.animations, anchors.patient, 5.0, Math.PI / 5);
     },
     undefined,
     (err) => {
-      console.warn('[MediConnect] patient.fbx failed to load; keeping placeholder figure.', err);
+      console.warn('[MediConnect] patient.fbx failed to load.', err);
     }
   );
 }
@@ -545,27 +478,6 @@ function buildEcosystemLines() {
   scene.add(ecoLines);
 }
 
-function buildParticles() {
-  const count = window.innerWidth < 768 ? 900 : 1800;
-  const geo = new THREE.BufferGeometry();
-  const pos = new Float32Array(count * 3);
-  const col = new Float32Array(count * 3);
-  const palette = [new THREE.Color(COL.cyan), new THREE.Color(COL.blue), new THREE.Color(COL.white)];
-  for (let i = 0; i < count; i++) {
-    pos[i * 3] = (Math.random() - 0.5) * 120;
-    pos[i * 3 + 1] = (Math.random() - 0.5) * 50 + 4;
-    pos[i * 3 + 2] = -Math.random() * 120 + 20;
-    const c = palette[Math.floor(Math.random() * palette.length)];
-    col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
-  }
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  const mat = new THREE.PointsMaterial({ size: 0.18, vertexColors: true, transparent: true, opacity: 0.7, depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true });
-  particles = new THREE.Points(geo, mat);
-  scene.add(particles);
-  dynamic.push(particles);
-}
-
 function setupComposer() {
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
@@ -668,9 +580,7 @@ function updateScene(dt, t) {
   }
 
   dynamic.forEach((o) => {
-    if (o === particles) {
-      o.rotation.y = t * 0.02;
-    } else if (o.userData && o.userData.cross) {
+    if (o.userData && o.userData.cross) {
       const s = 1 + Math.sin(t * 2) * 0.12;
       o.userData.cross.scale.setScalar(s);
       o.userData.crossV.scale.setScalar(s);
@@ -678,7 +588,7 @@ function updateScene(dt, t) {
       o.rotation.y = t * 0.15;
       if (o.userData.halo) o.userData.halo.rotation.z = t * 0.2;
       if (o.userData.lines) o.userData.lines.material.opacity = 0.2 + Math.sin(t * 1.5) * 0.12 + 0.15;
-    } else if (!o.userData.isFigure) {
+    } else {
       o.rotation.y += dt * 0.1;
     }
   });

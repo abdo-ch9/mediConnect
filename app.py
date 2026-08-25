@@ -248,8 +248,8 @@ prompt = ChatPromptTemplate.from_messages([
 # Email configuration
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-SMTP_USERNAME = "your-email@gmail.com"  # Replace with your email
-SMTP_PASSWORD = "your-app-password"     # Replace with your app password
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "abdelchpro@gmail.com")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "your-app-password")
 
 def send_email(to_email, subject, body):
     try:
@@ -743,17 +743,24 @@ def about():
 @app.route("/contact", methods=["GET", "POST"])
 def contact():
     if request.method == "POST":
-        # Here you would process the form data, such as sending an email
         name = request.form.get("name")
         email = request.form.get("email")
         subject = request.form.get("subject")
         message = request.form.get("message")
-        
-        # In a real implementation, you would send an email or store in database
-        # For now, just flash a success message
-        flash("Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.", "success")
+        try:
+            body = f"""
+            <h2>Nouveau message de contact</h2>
+            <p><strong>Nom:</strong> {name}</p>
+            <p><strong>Email:</strong> {email}</p>
+            <p><strong>Sujet:</strong> {subject}</p>
+            <p><strong>Message:</strong><br>{message}</p>
+            """
+            send_email("abdelchpro@gmail.com", f"Contact MediConnect: {subject}", body)
+            flash("Votre message a été envoyé avec succès. Nous vous répondrons dans les plus brefs délais.", "success")
+        except Exception as e:
+            print(f"Contact email error: {e}")
+            flash("Une erreur est survenue lors de l'envoi du message. Veuillez réessayer plus tard.", "error")
         return redirect(url_for('contact'))
-        
     return render_template('contact.html')
 
 @app.route("/doctor/new-appointment", methods=["GET", "POST"])

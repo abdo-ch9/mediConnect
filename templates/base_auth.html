@@ -14,6 +14,11 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
     
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
     
@@ -25,17 +30,17 @@
                 extend: {
                     colors: {
                         primary: {
-                            "50": "#F0F9FF",
-                            "100": "#E0F2FE",
-                            "200": "#B9E6FE",
-                            "300": "#7CD4FD",
-                            "400": "#36BFFA",
-                            "500": "#0CA5E9",
-                            "600": "#0284C7",
-                            "700": "#036AA1",
-                            "800": "#075985",
-                            "900": "#0C4A6E",
-                            "950": "#082F49"
+                            "50": "#EAF3FF",
+                            "100": "#DBEAFE",
+                            "200": "#BFDBFE",
+                            "300": "#93C5FD",
+                            "400": "#60A5FA",
+                            "500": "#3B82F6",
+                            "600": "#2563EB",
+                            "700": "#1D4ED8",
+                            "800": "#1E40AF",
+                            "900": "#0B1F3A",
+                            "950": "#07142A"
                         }
                     }
                 },
@@ -46,9 +51,20 @@
         }
     </script>
     
-    {% block extra_css %}{% endblock %}
+    {% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/experience.css') }}">{% endblock %}
 </head>
-<body class="bg-gray-50 dark:bg-gray-900">
+<body class="bg-slate-50 dark:bg-slate-900">
+    <header id="site-header" class="site-header">
+        <div class="site-header__inner">
+            <a href="{{ url_for('index') }}" class="brand">
+                <span class="brand__icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </span>
+                <span class="brand__name">Medi<span class="brand__name-accent">Connect</span></span>
+            </a>
+        </div>
+    </header>
+    <div class="h-20" aria-hidden="true"></div>
     {% block content %}{% endblock %}
     
     <!-- Flowbite JavaScript -->

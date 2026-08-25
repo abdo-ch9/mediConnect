@@ -14,6 +14,11 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
     
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
     
@@ -25,17 +30,17 @@
                 extend: {
                     colors: {
                         primary: {
-                            "50": "#F0F9FF",
-                            "100": "#E0F2FE",
-                            "200": "#B9E6FE",
-                            "300": "#7CD4FD",
-                            "400": "#36BFFA",
-                            "500": "#0CA5E9",
-                            "600": "#0284C7",
-                            "700": "#036AA1",
-                            "800": "#075985",
-                            "900": "#0C4A6E",
-                            "950": "#082F49"
+                            "50": "#EAF3FF",
+                            "100": "#DBEAFE",
+                            "200": "#BFDBFE",
+                            "300": "#93C5FD",
+                            "400": "#60A5FA",
+                            "500": "#3B82F6",
+                            "600": "#2563EB",
+                            "700": "#1D4ED8",
+                            "800": "#1E40AF",
+                            "900": "#0B1F3A",
+                            "950": "#07142A"
                         }
                     }
                 },
@@ -59,78 +64,73 @@
     </script>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900">
-    <!-- Navigation -->
-    <nav class="sticky top-0 z-40 bg-white dark:bg-gray-800 shadow">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex">
-                    <div class="flex-shrink-0 flex items-center">
-                        <a href="{{ url_for('index') }}" class="text-xl font-bold text-primary-600">MediConnect</a>
-                    </div>
-                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                        {% if not session.get('user_id') %}
-                            <a href="{{ url_for('index') }}" class="border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                Accueil
-                            </a>
-                            <a href="{{ url_for('services') }}" class="border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                Services
-                            </a>
-                            <a href="{{ url_for('about') }}" class="border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                À propos
-                            </a>
-                            <a href="{{ url_for('contact') }}" class="border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                Contact
-                            </a>
-                        {% else %}
-                            {% if session.get('role') == 'doctor' %}
-                                <a href="{{ url_for('doctor_dashboard') }}" class="border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                    Tableau de bord
-                                </a>
-                                <a href="{{ url_for('chat_list') }}" class="border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                    Chat médical
-                                </a>
-                            {% else %}
-                                <a href="{{ url_for('patient_dashboard') }}" class="border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                    Tableau de bord
-                                </a>
-                                <a href="{{ url_for('chat_list') }}" class="border-transparent text-gray-500 dark:text-gray-300 hover:border-gray-300 hover:text-gray-700 dark:hover:text-white inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                    Chat médical
-                                </a>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="hidden sm:ml-6 sm:flex sm:items-center">
-                    {% if session.get('user_id') %}
-                        <div class="flex items-center space-x-4">
-                            <a href="{{ url_for('chat_list') }}" class="text-gray-300 hover:text-white">
-                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                            </a>
-                            <a href="{{ url_for('chatbot') }}" class="text-gray-300 hover:text-white">
-                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                                </svg>
-                            </a>
-                            <span class="text-gray-300">|</span>
-                            <span class="text-gray-300">Bienvenue, {{ session.get('name', '') }}</span>
-                            <a href="{{ url_for('logout') }}" class="text-gray-300 hover:text-white">Déconnexion</a>
-                        </div>
+    <!-- Premium floating header -->
+    <header id="site-header" class="site-header">
+        <div class="site-header__inner">
+            <a href="{{ url_for('index') }}" class="brand">
+                <span class="brand__icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                </span>
+                <span class="brand__name">Medi<span class="brand__name-accent">Connect</span></span>
+            </a>
+
+            <nav class="site-nav" aria-label="Navigation principale">
+                {% if not session.get('user_id') %}
+                    <a href="{{ url_for('index') }}">Accueil</a>
+                    <a href="{{ url_for('services') }}">Services</a>
+                    <a href="{{ url_for('about') }}">À propos</a>
+                    <a href="{{ url_for('contact') }}">Contact</a>
+                {% else %}
+                    {% if session.get('role') == 'doctor' %}
+                        <a href="{{ url_for('doctor_dashboard') }}">Tableau de bord</a>
+                        <a href="{{ url_for('chat_list') }}">Chat médical</a>
                     {% else %}
-                        <div class="flex items-center space-x-4">
-                            <a href="{{ url_for('login') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                                Se connecter
-                            </a>
-                            <a href="{{ url_for('register') }}" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                                Créer un compte
-                            </a>
-                        </div>
+                        <a href="{{ url_for('patient_dashboard') }}">Tableau de bord</a>
+                        <a href="{{ url_for('chat_list') }}">Chat médical</a>
                     {% endif %}
-                </div>
+                {% endif %}
+            </nav>
+
+            <div class="site-actions">
+                {% if session.get('user_id') %}
+                    <span class="site-welcome">Bonjour, {{ session.get('name', '') }}</span>
+                    <a href="{{ url_for('chat_list') }}" class="icon-btn" title="Chat médical" aria-label="Chat médical">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    </a>
+                    <a href="{{ url_for('chatbot') }}" class="icon-btn" title="Assistant IA" aria-label="Assistant IA">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="btn-ghost">Déconnexion</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn-ghost">Se connecter</a>
+                    <a href="{{ url_for('register') }}" class="btn-primary">Créer un compte</a>
+                {% endif %}
+                <button id="nav-toggle" class="nav-toggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="mobile-menu">
+                    <span></span><span></span><span></span>
+                </button>
             </div>
         </div>
-    </nav>
+
+        <div id="mobile-menu" class="mobile-menu" hidden>
+            {% if not session.get('user_id') %}
+                <a href="{{ url_for('index') }}">Accueil</a>
+                <a href="{{ url_for('services') }}">Services</a>
+                <a href="{{ url_for('about') }}">À propos</a>
+                <a href="{{ url_for('contact') }}">Contact</a>
+                <a href="{{ url_for('login') }}" class="btn-ghost">Se connecter</a>
+                <a href="{{ url_for('register') }}" class="btn-primary">Créer un compte</a>
+            {% else %}
+                {% if session.get('role') == 'doctor' %}
+                    <a href="{{ url_for('doctor_dashboard') }}">Tableau de bord</a>
+                    <a href="{{ url_for('chat_list') }}">Chat médical</a>
+                {% else %}
+                    <a href="{{ url_for('patient_dashboard') }}">Tableau de bord</a>
+                    <a href="{{ url_for('chat_list') }}">Chat médical</a>
+                {% endif %}
+                <a href="{{ url_for('logout') }}" class="btn-ghost">Déconnexion</a>
+            {% endif %}
+        </div>
+    </header>
     
     <!-- Main Content with padding for fixed navbar -->
     <main class="pt-24">
@@ -257,6 +257,38 @@
         });
     </script>
     
+    <script>
+        // Header: shrink/blur on scroll + mobile menu toggle.
+        (function () {
+            var header = document.getElementById('site-header');
+            var toggle = document.getElementById('nav-toggle');
+            var menu = document.getElementById('mobile-menu');
+            function onScroll() {
+                if (window.scrollY > 24) header.classList.add('is-scrolled');
+                else header.classList.remove('is-scrolled');
+            }
+            window.addEventListener('scroll', onScroll, { passive: true });
+            onScroll();
+            if (toggle && menu) {
+                toggle.addEventListener('click', function () {
+                    if (menu.hasAttribute('hidden')) {
+                        menu.removeAttribute('hidden');
+                        toggle.setAttribute('aria-expanded', 'true');
+                    } else {
+                        menu.setAttribute('hidden', '');
+                        toggle.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                menu.querySelectorAll('a').forEach(function (a) {
+                    a.addEventListener('click', function () {
+                        menu.setAttribute('hidden', '');
+                        toggle.setAttribute('aria-expanded', 'false');
+                    });
+                });
+            }
+        })();
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html> 
