@@ -27,7 +27,7 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
 # Flask app instantiation
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(16)  # Generate a random secret key
+app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 socketio = SocketIO(app)
 
 # API key configuration (only set when present so a missing key cannot crash import)
