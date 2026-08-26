@@ -515,19 +515,23 @@ function setupScroll() {
   });
 }
 
+let resizeHandler = null;
+let visibilityHandler = null;
+
 function setupResize() {
-  window.addEventListener('resize', () => {
+  resizeHandler = () => {
     const w = window.innerWidth, h = window.innerHeight;
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
     composer.setSize(w, h);
     bloomPass.setSize(w, h);
-  });
+  };
+  window.addEventListener('resize', resizeHandler);
 }
 
 function setupVisibility() {
-  document.addEventListener('visibilitychange', () => {
+  visibilityHandler = () => {
     if (document.hidden) {
       state.running = false;
     } else if (!state.running) {
@@ -535,7 +539,8 @@ function setupVisibility() {
       clock.getDelta();
       animate();
     }
-  });
+  };
+  document.addEventListener('visibilitychange', visibilityHandler);
 }
 
 function sampleCamera(p, outPos, outLook) {
@@ -622,10 +627,63 @@ function animate() {
   composer.render();
 }
 
+function disposeMaterial(material) {
+  Object.values(material).forEach((value) => {
+    if (value && value.isTexture) value.dispose();
+  });
+  material.dispose();
+}
+
 function destroy() {
   state.running = false;
-  window.removeEventListener('resize', setupResize);
-  if (renderer) renderer.dispose();
+  
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler);
+    resizeHandler = null;
+  }
+  if (visibilityHandler) {
+    document.removeEventListener('visibilitychange', visibilityHandler);
+    visibilityHandler = null;
+  }
+  
+  if (mixers.length) {
+    mixers.forEach((m) => m.stopAllAction());
+    mixers.length = 0;
+  }
+  
+  if (scene) {
+    scene.traverse((object) => {
+      if (object.geometry) object.geometry.dispose();
+      if (object.material) {
+        if (Array.isArray(object.material)) {
+          object.material.forEach(disposeMaterial);
+        } else {
+          disposeMaterial(object.material);
+        }
+      }
+    });
+    scene = null;
+  }
+  
+  if (composer) {
+    composer.dispose();
+    composer = null;
+  }
+  
+  if (renderer) {
+    renderer.dispose();
+    renderer = null;
+  }
+  
+  pulse = null;
+  heartTube = null;
+  heartCurve = null;
+  aiGroup = null;
+  ecoLines = null;
+  dynamic.length = 0;
+  camera = null;
+  clock = null;
+  bloomPass = null;
 }
 
 export { init };

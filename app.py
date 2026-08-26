@@ -2,6 +2,7 @@ from flask import Flask, render_template, jsonify, request, redirect, url_for, f
 from src.prompt import *
 import os
 import sys
+import requests
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 import secrets
@@ -19,8 +20,6 @@ from flask_socketio import SocketIO, emit, join_room, leave_room
 
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
-from langchain.schema import HumanMessage, SystemMessage
-import os
 from dotenv import load_dotenv
 from urllib.parse import urlparse, parse_qs, unquote
 
@@ -356,7 +355,7 @@ def init_db():
 try:
     init_db()
 except Exception as e:
-    print(f"Warning: Database initialization failed: {e}")
+    app.logger.warning(f"Database initialization failed: {e}")
 
 # Login decorator for protected routes
 def login_required(f):
@@ -409,7 +408,7 @@ def send_email(to_email, subject, body):
         server.quit()
         return True
     except Exception as e:
-        print(f"Error sending email: {str(e)}")
+        app.logger.error(f"Error sending email: {str(e)}")
         return False
 
 def send_appointment_reminder(appointment_id):
@@ -614,10 +613,15 @@ def reset_password_request():
             )
             conn.commit()
             
-            # Here you would send an email with the reset link
-            # For now, we'll just flash the link (in a real app, never do this!)
+            # Send reset email
             reset_url = url_for('reset_password', token=token, _external=True)
-            flash(f"Un lien de réinitialisation a été envoyé à votre email. URL: {reset_url}", "success")
+            email_body = f"""
+            <h2>Réinitialisation de mot de passe</h2>
+            <p>Cliquez sur le lien suivant pour réinitialiser votre mot de passe :</p>
+            <p><a href="{reset_url}">{reset_url}</a></p>
+            <p>Ce lien expirera dans 24 heures.</p>
+            """
+            send_email(email, "Réinitialisation de mot de passe - MediConnect", email_body)
             
         else:
             # Don't reveal that the email doesn't exist
@@ -869,8 +873,7 @@ def chat():
         # The response is now directly from Llama 3.3 70B model
         return response.content
     except Exception as e:
-        # Handle any errors
-        print(f"Error in chat: {str(e)}")
+        app.logger.error(f"Error in chat: {str(e)}")
         return "Désolé, une erreur s'est produite lors du traitement de votre demande. Veuillez réessayer. ⚠️"
 
 # Error handlers
@@ -1560,8 +1563,6 @@ def chatbot_response():
         if not user_message or not str(user_message).strip():
             return jsonify({'error': 'Veuillez saisir un message.'}), 400
 
-        import requests as _requests
-
         headers = {
             "Authorization": f"Bearer {OPENAI_API_KEY}",
             "Content-Type": "application/json",
@@ -1577,7 +1578,7 @@ def chatbot_response():
             ],
         }
 
-        resp = _requests.post(
+        resp = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
             headers=headers,
             json=payload,
@@ -1591,8 +1592,7 @@ def chatbot_response():
         return jsonify({'response': content})
 
     except Exception as e:
-        import traceback
-        traceback.print_exc()
+        app.logger.exception("Chatbot error")
         return jsonify({'error': f'Erreur du chatbot: {str(e)}'}), 500
 
 # Run the Flask app
