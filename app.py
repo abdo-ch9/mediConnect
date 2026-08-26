@@ -446,12 +446,11 @@ def register():
         
         # Create user
         hashed_password = generate_password_hash(password)
-        cursor = conn.cursor()
-        cursor.execute(
+        db_execute(conn,
             'INSERT INTO users (first_name, last_name, email, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)',
             (first_name, last_name, email, phone, hashed_password, role)
         )
-        user_id = cursor.lastrowid
+        user_id = conn.cursor().lastrowid
         
         # If doctor, add doctor profile
         if role == 'doctor':
@@ -464,7 +463,7 @@ def register():
                 flash("Tous les champs de médecin sont obligatoires.", "error")
                 return render_template('auth/register.html')
             
-            cursor.execute(
+            db_execute(conn,
                 'INSERT INTO doctor_profiles (user_id, speciality, license_number) VALUES (?, ?, ?)',
                 (user_id, speciality, license_number)
             )
@@ -826,12 +825,11 @@ def new_appointment():
         reason = request.form.get("reason")
         
         conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute(
+        db_execute(conn,
             'INSERT INTO appointments (patient_id, doctor_id, date, time, department, reason) VALUES (?, ?, ?, ?, ?, ?)',
             (patient_id, session['user_id'], date, time, department, reason)
         )
-        appointment_id = cursor.lastrowid
+        appointment_id = conn.cursor().lastrowid
         
         # Get email addresses
         patient = db_execute(conn,'SELECT email, first_name, last_name FROM users WHERE id = ?', (patient_id,)).fetchone()
@@ -1096,12 +1094,11 @@ def handle_message(data):
     message = data['message']
     
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
+    db_execute(conn,
         'INSERT INTO messages (sender_id, receiver_id, subject, content) VALUES (?, ?, ?, ?)',
         (sender_id, receiver_id, "Message privé", message)
     )
-    message_id = cursor.lastrowid
+    message_id = conn.cursor().lastrowid
     conn.commit()
     
     # Get sender info
