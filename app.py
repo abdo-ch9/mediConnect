@@ -1474,26 +1474,35 @@ def chatbot_response():
         if not user_message or not str(user_message).strip():
             return jsonify({'error': 'Veuillez saisir un message.'}), 400
 
-        chat = ChatOpenAI(
-            model="meta-llama/llama-3.3-70b-instruct",
-            temperature=0.7,
-            openai_api_base="https://openrouter.ai/api/v1",
-            openai_api_key=OPENAI_API_KEY,
-            default_headers={
-                "Authorization": f"Bearer {OPENAI_API_KEY}",
-                "HTTP-Referer": "https://medi-connect-three-kappa.vercel.app",
-                "X-Title": "MediConnect Chatbot",
-            },
-            request_timeout=55,
+        import requests as _requests
+
+        headers = {
+            "Authorization": f"Bearer {OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://medi-connect-three-kappa.vercel.app",
+            "X-Title": "MediConnect Chatbot",
+        }
+        payload = {
+            "model": "meta-llama/llama-3.3-70b-instruct",
+            "temperature": 0.7,
+            "messages": [
+                {"role": "system", "content": "You are a medical assistant chatbot. Provide helpful information in French."},
+                {"role": "user", "content": user_message},
+            ],
+        }
+
+        resp = _requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=55,
         )
 
-        messages = [
-            SystemMessage(content="You are a medical assistant chatbot. Provide helpful information in French."),
-            HumanMessage(content=user_message)
-        ]
+        if resp.status_code != 200:
+            return jsonify({'error': f'Erreur OpenRouter ({resp.status_code}): {resp.text}'}), 500
 
-        response = chat.invoke(messages)
-        return jsonify({'response': response.content})
+        content = resp.json()["choices"][0]["message"]["content"]
+        return jsonify({'response': content})
 
     except Exception as e:
         import traceback
