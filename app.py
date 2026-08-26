@@ -29,7 +29,7 @@ OPENAI_API_KEY = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
 # Flask app instantiation
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
-socketio = SocketIO(app)
+socketio = SocketIO(app) if not os.getenv("VERCEL") else None
 
 # API key configuration (only set when present so a missing key cannot crash import)
 if OPENAI_API_KEY:
@@ -341,9 +341,13 @@ def send_appointment_reminder(appointment_id):
     
     conn.close()
 
-# Initialize scheduler
-scheduler = BackgroundScheduler()
-scheduler.start()
+# Initialize scheduler (only in non-serverless environments)
+# Vercel serverless functions do not support background threads.
+if not IS_VERCEL:
+    scheduler = BackgroundScheduler()
+    scheduler.start()
+else:
+    scheduler = None
 
 # Schedule appointment reminders
 def schedule_appointment_reminders():
@@ -355,22 +359,24 @@ def schedule_appointment_reminders():
     ''', (tomorrow,)).fetchall()
     
     for appointment in appointments:
-        scheduler.add_job(
-            send_appointment_reminder,
-            'date',
-            run_date=datetime.now() + timedelta(hours=12),
-            args=[appointment['id']]
-        )
+        if scheduler:
+            scheduler.add_job(
+                send_appointment_reminder,
+                'date',
+                run_date=datetime.now() + timedelta(hours=12),
+                args=[appointment['id']]
+            )
     
     conn.close()
 
-# Schedule the reminder check daily
-scheduler.add_job(
-    schedule_appointment_reminders,
-    IntervalTrigger(hours=24),
-    id='appointment_reminders',
-    replace_existing=True
-)
+# Schedule the reminder check daily (only when scheduler is running)
+if scheduler:
+    scheduler.add_job(
+        schedule_appointment_reminders,
+        IntervalTrigger(hours=24),
+        id='appointment_reminders',
+        replace_existing=True
+    )
 
 # ✅ Route to render landing page
 @app.route("/")
