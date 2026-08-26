@@ -21,7 +21,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema import HumanMessage, SystemMessage
 import os
 from dotenv import load_dotenv
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs, unquote
 
 load_dotenv()
 
@@ -80,16 +80,50 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def get_db_type():
     return "postgresql" if IS_POSTGRES else "sqlite"
 
+def _parse_postgres_dsn(dsn):
+    """
+    Parse a PostgreSQL DSN URI into psycopg2 kwargs.
+    Filters out non-standard query parameters (e.g. ?supa=..., ?pgbouncer=...)
+    that cause psycopg2.connect() to raise ProgrammingError: invalid URI query parameter.
+    """
+    parsed = urlparse(dsn)
+    kwargs = {}
+    if parsed.hostname:
+        kwargs['host'] = parsed.hostname
+    if parsed.port:
+        kwargs['port'] = parsed.port
+    if parsed.username:
+        kwargs['user'] = unquote(parsed.username)
+    if parsed.password:
+        kwargs['password'] = unquote(parsed.password)
+    dbname = parsed.path.lstrip('/')
+    if dbname:
+        kwargs['dbname'] = dbname
+
+    # Standard libpq parameters accepted by psycopg2
+    valid_libpq_params = {
+        'sslmode', 'sslrootcert', 'sslcert', 'sslkey',
+        'connect_timeout', 'application_name', 'keepalives',
+        'keepalives_idle', 'keepalives_interval', 'keepalives_count',
+        'tcp_user_timeout', 'options', 'gssencmode', 'channel_binding'
+    }
+    if parsed.query:
+        qs = parse_qs(parsed.query)
+        for k, v in qs.items():
+            if k in valid_libpq_params and v:
+                kwargs[k] = v[0]
+    return kwargs
+
 def get_db_connection():
     if IS_POSTGRES:
         import psycopg2
         import psycopg2.extras
 
+        pg_kwargs = _parse_postgres_dsn(DATABASE_URL)
         conn = psycopg2.connect(
-            DATABASE_URL,
-            cursor_factory=psycopg2.extras.DictCursor
+            cursor_factory=psycopg2.extras.DictCursor,
+            **pg_kwargs
         )
-
         return conn
 
     else:
@@ -265,7 +299,10 @@ def init_db():
     conn.close()
 
 # Initialize database on app startup
-init_db()
+try:
+    init_db()
+except Exception as e:
+    print(f"Warning: Database initialization failed: {e}")
 
 # Login decorator for protected routes
 def login_required(f):
