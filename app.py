@@ -446,11 +446,11 @@ def register():
         
         # Create user
         hashed_password = generate_password_hash(password)
-        db_execute(conn,
+        cursor = db_execute(conn,
             'INSERT INTO users (first_name, last_name, email, phone, password, role) VALUES (?, ?, ?, ?, ?, ?)',
             (first_name, last_name, email, phone, hashed_password, role)
         )
-        user_id = conn.cursor().lastrowid
+        user_id = cursor.lastrowid
         
         # If doctor, add doctor profile
         if role == 'doctor':
@@ -825,11 +825,11 @@ def new_appointment():
         reason = request.form.get("reason")
         
         conn = get_db_connection()
-        db_execute(conn,
+        cursor = db_execute(conn,
             'INSERT INTO appointments (patient_id, doctor_id, date, time, department, reason) VALUES (?, ?, ?, ?, ?, ?)',
             (patient_id, session['user_id'], date, time, department, reason)
         )
-        appointment_id = conn.cursor().lastrowid
+        appointment_id = cursor.lastrowid
         
         # Get email addresses
         patient = db_execute(conn,'SELECT email, first_name, last_name FROM users WHERE id = ?', (patient_id,)).fetchone()
@@ -1094,11 +1094,11 @@ def handle_message(data):
     message = data['message']
     
     conn = get_db_connection()
-    db_execute(conn,
+    cursor = db_execute(conn,
         'INSERT INTO messages (sender_id, receiver_id, subject, content) VALUES (?, ?, ?, ?)',
         (sender_id, receiver_id, "Message privé", message)
     )
-    message_id = conn.cursor().lastrowid
+    message_id = cursor.lastrowid
     conn.commit()
     
     # Get sender info
