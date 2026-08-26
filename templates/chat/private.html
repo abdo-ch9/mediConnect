@@ -132,11 +132,11 @@
                 messageInput.value = '';
             } else {
                 const err = await response.json();
-                alert(err.error || 'Erreur lors de l\\'envoi du message.');
+                alert(err.error || "Erreur lors de l'envoi du message.");
             }
         } catch (err) {
             console.error('Error sending message:', err);
-            alert('Erreur lors de l\\'envoi du message.');
+            alert("Erreur lors de l'envoi du message.");
         } finally {
             messageInput.disabled = false;
             messageInput.focus();
