@@ -29,7 +29,21 @@ OPENAI_API_KEY = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
 # Flask app instantiation
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
-socketio = SocketIO(app) if not os.getenv("VERCEL") else None
+if not os.getenv("VERCEL"):
+    socketio = SocketIO(app)
+else:
+    # Vercel serverless does not support WebSockets.
+    # Provide a no-op stub so @socketio.on(...) decorators don't crash at import.
+    class _NoOpSocketIO:
+        def on(self, *args, **kwargs):
+            def decorator(f):
+                return f
+            return decorator
+        def emit(self, *args, **kwargs):
+            pass
+        def run(self, *args, **kwargs):
+            pass
+    socketio = _NoOpSocketIO()
 
 # API key configuration (only set when present so a missing key cannot crash import)
 if OPENAI_API_KEY:
