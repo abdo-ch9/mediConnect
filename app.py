@@ -1465,11 +1465,14 @@ def chatbot():
 @login_required
 def chatbot_response():
     try:
-        data = request.get_json()
+        if not OPENAI_API_KEY:
+            return jsonify({'error': 'Le service de chat n\'est pas configuré (clé API manquante).'}), 503
+
+        data = request.get_json(silent=True) or {}
         user_message = data.get('message')
 
-        if not OPENAI_API_KEY:
-            return jsonify({'error': 'Le service de chat n\'est pas configuré.'}), 503
+        if not user_message or not str(user_message).strip():
+            return jsonify({'error': 'Veuillez saisir un message.'}), 400
 
         chat = ChatOpenAI(
             model="meta-llama/llama-3.3-70b-instruct",
@@ -1477,27 +1480,24 @@ def chatbot_response():
             openai_api_base="https://openrouter.ai/api/v1",
             openai_api_key=OPENAI_API_KEY,
             default_headers={
-                "HTTP-Referer": "http://192.168.11.102:8080",
+                "HTTP-Referer": "https://medi-connect-three-kappa.vercel.app",
                 "X-Title": "MediConnect Chatbot",
-                "Authorization": f"Bearer {OPENAI_API_KEY}"
-            }
+            },
+            request_timeout=55,
         )
-        
+
         messages = [
             SystemMessage(content="You are a medical assistant chatbot. Provide helpful information in French."),
             HumanMessage(content=user_message)
         ]
-        
-        try:
-            response = chat.invoke(messages)
-            return jsonify({'response': response.content})
-        except Exception as api_error:
-            print(f"API Error: {str(api_error)}")
-            return jsonify({'error': 'Erreur de communication avec l\'assistant. Veuillez réessayer.'}), 500
-        
+
+        response = chat.invoke(messages)
+        return jsonify({'response': response.content})
+
     except Exception as e:
-        print(f"Chatbot error: {str(e)}")
-        return jsonify({'error': 'Désolé, une erreur est survenue. Veuillez réessayer.'}), 500
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Erreur du chatbot: {str(e)}'}), 500
 
 # Run the Flask app
 if __name__ == "__main__":

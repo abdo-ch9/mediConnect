@@ -108,7 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Add bot response
                 addMessage(data.response);
             } else {
-                addMessage('Désolé, une erreur est survenue. Veuillez réessayer.');
+                addMessage(data.error || 'Désolé, une erreur est survenue. Veuillez réessayer.');
             }
         } catch (error) {
             addMessage('Désolé, une erreur est survenue. Veuillez réessayer.');
