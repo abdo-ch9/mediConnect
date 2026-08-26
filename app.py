@@ -1480,6 +1480,7 @@ def chatbot_response():
             openai_api_base="https://openrouter.ai/api/v1",
             openai_api_key=OPENAI_API_KEY,
             default_headers={
+                "Authorization": f"Bearer {OPENAI_API_KEY}",
                 "HTTP-Referer": "https://medi-connect-three-kappa.vercel.app",
                 "X-Title": "MediConnect Chatbot",
             },
