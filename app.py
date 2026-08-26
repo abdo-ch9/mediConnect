@@ -8,6 +8,7 @@ import secrets
 import sqlite3
 from functools import wraps
 import json
+import re
 from werkzeug.utils import secure_filename
 import smtplib
 from email.mime.text import MIMEText
@@ -142,6 +143,10 @@ class PgCursorWrapper:
         self.lastrowid = None
 
     def execute(self, query, params=None):
+        # PostgreSQL boolean compatibility
+        query = re.sub(r'\bis_read\s*=\s*0\b', 'is_read = FALSE', query, flags=re.IGNORECASE)
+        query = re.sub(r'\bis_read\s*=\s*1\b', 'is_read = TRUE', query, flags=re.IGNORECASE)
+
         is_insert = query.strip().upper().startswith("INSERT INTO") and "RETURNING" not in query.upper()
         if is_insert:
             query = query.rstrip("; \t\n") + " RETURNING id"
@@ -691,7 +696,7 @@ def patient_dashboard():
     unread_messages = db_execute(conn,'''
         SELECT COUNT(*) as count 
         FROM messages 
-        WHERE receiver_id = ? AND is_read = 0
+        WHERE receiver_id = ? AND is_read = FALSE
     ''', (session['user_id'],)).fetchone()['count']
     
     # Get assigned doctors
@@ -748,7 +753,7 @@ def doctor_dashboard():
     unread_messages = db_execute(conn,'''
         SELECT COUNT(*) as count 
         FROM messages 
-        WHERE receiver_id = ? AND is_read = 0
+        WHERE receiver_id = ? AND is_read = FALSE
     ''', (session['user_id'],)).fetchone()['count']
     
     # Get recent messages
@@ -759,7 +764,7 @@ def doctor_dashboard():
                u.id as sender_id
         FROM messages m
         JOIN users u ON m.sender_id = u.id
-        WHERE m.receiver_id = ? AND m.is_read = 0
+        WHERE m.receiver_id = ? AND m.is_read = FALSE
         ORDER BY m.created_at DESC
         LIMIT 5
     ''', (session['user_id'],)).fetchall()
@@ -822,7 +827,7 @@ def chat_list():
                 sender_id as other_user_id,
                 COUNT(*) as unread_count
             FROM messages
-            WHERE receiver_id = ? AND is_read = 0
+            WHERE receiver_id = ? AND is_read = FALSE
             GROUP BY sender_id
         )
         SELECT 
@@ -1252,8 +1257,8 @@ def private_chat(user_id):
     # Mark messages as read
     db_execute(conn,'''
         UPDATE messages 
-        SET is_read = 1 
-        WHERE receiver_id = ? AND sender_id = ? AND is_read = 0
+        SET is_read = TRUE 
+        WHERE receiver_id = ? AND sender_id = ? AND is_read = FALSE
     ''', (session['user_id'], user_id))
     conn.commit()
     conn.close()
