@@ -41,7 +41,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Database configuration
 # Use DATABASE_URL or POSTGRES_URL for PostgreSQL (e.g., on Vercel with Vercel Postgres)
 # Falls back to SQLite for local development
-DATABASE_URL = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL")
+DATABASE_URL = os.getenv("POSTGRES_URL") or os.getenv("DATABASE_URL")
 IS_POSTGRES = DATABASE_URL and (DATABASE_URL.startswith("postgres://") or DATABASE_URL.startswith("postgresql://"))
 
 # Upload path configuration
@@ -70,24 +70,24 @@ def get_db_connection():
     if IS_POSTGRES:
         import psycopg2
         import psycopg2.extras
-        parsed = urlparse(DATABASE_URL)
+
         conn = psycopg2.connect(
-            host=parsed.hostname,
-            database=parsed.path[1:],
-            user=parsed.username,
-            password=parsed.password,
-            port=parsed.port or 5432
+            DATABASE_URL,
+            cursor_factory=psycopg2.extras.DictCursor
         )
-        conn.cursor_factory = psycopg2.extras.DictCursor
+
         return conn
+
     else:
         db_dir = os.path.dirname(DB_PATH) if DB_PATH else None
+
         if db_dir and not os.path.exists(db_dir):
             os.makedirs(db_dir, exist_ok=True)
+
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         return conn
-
+    
 def db_execute(conn, query, params=None):
     if IS_POSTGRES:
         query = query.replace("?", "%s")

@@ -13,4 +13,4 @@ requests==2.31.0
 werkzeug==2.3.7
 APScheduler
 Flask-SocketIO
-psycopg2-binary==2.9.9
+psycopg2-binary
