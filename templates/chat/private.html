@@ -56,13 +56,12 @@
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script>
-    const socket = io();
     const messageForm = document.getElementById('message-form');
     const messageInput = document.getElementById('message-input');
     const chatMessages = document.getElementById('chat-messages');
     const otherUserId = {{ other_user.id }};
+    const currentUserId = {{ session.user_id }};
 
     // Scroll to bottom of chat
     function scrollToBottom() {
@@ -71,51 +70,82 @@
 
     // Add message to chat
     function addMessage(message, isSent = false) {
+        const existing = chatMessages.querySelector(`[data-msg-id="${message.id}"]`);
+        if (existing) return;
+
         const messageDiv = document.createElement('div');
         messageDiv.className = `flex ${isSent ? 'justify-end' : 'justify-start'}`;
-        
+        messageDiv.setAttribute('data-msg-id', message.id);
+
         const messageContent = document.createElement('div');
         messageContent.className = `max-w-[70%] ${isSent ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'} rounded-lg px-4 py-2`;
-        
+
         const messageText = document.createElement('p');
         messageText.className = 'text-sm';
         messageText.textContent = message.content;
-        
+
         const messageTime = document.createElement('p');
         messageTime.className = `text-xs mt-1 ${isSent ? 'text-indigo-200' : 'text-gray-500 dark:text-gray-400'}`;
         messageTime.textContent = message.timestamp;
-        
+
         messageContent.appendChild(messageText);
         messageContent.appendChild(messageTime);
         messageDiv.appendChild(messageContent);
         chatMessages.appendChild(messageDiv);
-        
+
         scrollToBottom();
     }
 
+    // Fetch all messages and render any new ones
+    async function fetchMessages() {
+        try {
+            const response = await fetch(`/chat/${otherUserId}/messages`);
+            if (!response.ok) return;
+            const messages = await response.json();
+            messages.forEach(msg => {
+                addMessage(msg, msg.sender_id === currentUserId);
+            });
+        } catch (e) {
+            console.error('Error fetching messages:', e);
+        }
+    }
+
     // Handle form submission
-    messageForm.addEventListener('submit', (e) => {
+    messageForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const message = messageInput.value.trim();
-        
-        if (message) {
-            socket.emit('send_message', {
-                receiver_id: otherUserId,
-                message: message
+
+        if (!message) return;
+
+        messageInput.disabled = true;
+
+        try {
+            const response = await fetch(`/chat/${otherUserId}/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `message=${encodeURIComponent(message)}`
             });
-            messageInput.value = '';
+
+            if (response.ok) {
+                const data = await response.json();
+                addMessage(data, true);
+                messageInput.value = '';
+            } else {
+                const err = await response.json();
+                alert(err.error || 'Erreur lors de l\\'envoi du message.');
+            }
+        } catch (err) {
+            console.error('Error sending message:', err);
+            alert('Erreur lors de l\\'envoi du message.');
+        } finally {
+            messageInput.disabled = false;
+            messageInput.focus();
         }
     });
 
-    // Handle received messages
-    socket.on('new_message', (message) => {
-        addMessage(message);
-    });
-
-    // Handle sent messages
-    socket.on('message_sent', (message) => {
-        addMessage(message, true);
-    });
+    // Load messages on page load, then poll every 5 seconds for new messages
+    fetchMessages();
+    setInterval(fetchMessages, 5000);
 
     // Scroll to bottom on load
     scrollToBottom();

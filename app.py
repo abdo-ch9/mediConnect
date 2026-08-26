@@ -1267,6 +1267,72 @@ def private_chat(user_id):
                          other_user=other_user,
                          messages=messages)
 
+@app.route("/chat/<int:user_id>/send", methods=["POST"])
+@login_required
+def send_chat_message(user_id):
+    conn = get_db_connection()
+    other_user = db_execute(conn,'SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not other_user:
+        conn.close()
+        return jsonify({"error": "Utilisateur non trouvé."}), 404
+
+    sender_id = session['user_id']
+    message = request.form.get("message", "").strip()
+
+    if not message:
+        conn.close()
+        return jsonify({"error": "Le message ne peut pas être vide."}), 400
+
+    cursor = db_execute(conn,
+        'INSERT INTO messages (sender_id, receiver_id, subject, content) VALUES (?, ?, ?, ?)',
+        (sender_id, user_id, "Message privé", message)
+    )
+    message_id = cursor.lastrowid
+    conn.commit()
+
+    sender = db_execute(conn,'SELECT first_name, last_name FROM users WHERE id = ?', (sender_id,)).fetchone()
+
+    message_data = {
+        'id': message_id,
+        'sender_id': sender_id,
+        'sender_name': f"{sender['first_name']} {sender['last_name']}",
+        'content': message,
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    }
+
+    conn.close()
+    return jsonify(message_data), 201
+
+@app.route("/chat/<int:user_id>/messages", methods=["GET"])
+@login_required
+def get_chat_messages(user_id):
+    conn = get_db_connection()
+    db_execute(conn,'''
+        UPDATE messages
+        SET is_read = TRUE
+        WHERE receiver_id = ? AND sender_id = ? AND is_read = FALSE
+    ''', (session['user_id'], user_id))
+    conn.commit()
+
+    messages = db_execute(conn,'''
+        SELECT m.id, m.sender_id, m.receiver_id, m.content, m.created_at as timestamp
+        FROM messages m
+        WHERE (m.sender_id = ? AND m.receiver_id = ?)
+           OR (m.sender_id = ? AND m.receiver_id = ?)
+        ORDER BY m.created_at ASC
+    ''', (session['user_id'], user_id, user_id, session['user_id'])).fetchall()
+
+    conn.close()
+
+    result = [{
+        'id': row['id'],
+        'sender_id': row['sender_id'],
+        'content': row['content'],
+        'timestamp': row['timestamp'].strftime('%Y-%m-%d %H:%M:%S') if hasattr(row['timestamp'], 'strftime') else str(row['timestamp'])
+    } for row in messages]
+
+    return jsonify(result)
+
 # Prescription refill routes
 @app.route("/patient/prescription/<int:prescription_id>/refill", methods=["POST"])
 @login_required
