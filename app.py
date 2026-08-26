@@ -136,12 +136,61 @@ def get_db_connection():
         conn.row_factory = sqlite3.Row
         return conn
     
+class PgCursorWrapper:
+    def __init__(self, cursor):
+        self._cursor = cursor
+        self.lastrowid = None
+
+    def execute(self, query, params=None):
+        is_insert = query.strip().upper().startswith("INSERT INTO") and "RETURNING" not in query.upper()
+        if is_insert:
+            query = query.rstrip("; \t\n") + " RETURNING id"
+        if params:
+            self._cursor.execute(query, params)
+        else:
+            self._cursor.execute(query)
+        if is_insert:
+            try:
+                row = self._cursor.fetchone()
+                if row:
+                    self.lastrowid = row[0] if isinstance(row, (tuple, list)) else (row['id'] if 'id' in row else row[0])
+            except Exception:
+                self.lastrowid = None
+        return self
+
+    def fetchone(self):
+        return self._cursor.fetchone()
+
+    def fetchall(self):
+        return self._cursor.fetchall()
+
+    def fetchmany(self, size=None):
+        return self._cursor.fetchmany(size) if size else self._cursor.fetchmany()
+
+    @property
+    def rowcount(self):
+        return self._cursor.rowcount
+
+    def __iter__(self):
+        return iter(self._cursor)
+
+    def __getattr__(self, name):
+        return getattr(self._cursor, name)
+
 def db_execute(conn, query, params=None):
     if IS_POSTGRES:
         query = query.replace("?", "%s")
-    if params:
-        return conn.cursor().execute(query, params)
-    return conn.cursor().execute(query)
+        cursor = PgCursorWrapper(conn.cursor())
+        if params:
+            return cursor.execute(query, params)
+        return cursor.execute(query)
+    else:
+        cursor = conn.cursor()
+        if params:
+            cursor.execute(query, params)
+        else:
+            cursor.execute(query)
+        return cursor
 
 def init_db():
     conn = get_db_connection()
