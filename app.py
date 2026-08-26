@@ -994,6 +994,26 @@ def doctor_appointments():
     conn.close()
     return render_template('doctor/appointments.html', appointments=appointments)
 
+@app.route("/doctor/patients")
+@login_required
+def doctor_patients():
+    if session.get('role', '').lower() != 'doctor':
+        flash("Accès non autorisé.", "error")
+        return redirect(url_for('index'))
+    conn = get_db_connection()
+    patients = db_execute(conn,'''
+        SELECT DISTINCT u.id, u.first_name, u.last_name, u.phone, u.email,
+               COUNT(a.id) as appointment_count,
+               MAX(a.date) as last_appointment_date
+        FROM users u
+        JOIN appointments a ON a.patient_id = u.id
+        WHERE a.doctor_id = ?
+        GROUP BY u.id, u.first_name, u.last_name, u.phone, u.email
+        ORDER BY u.last_name, u.first_name
+    ''', (session['user_id'],)).fetchall()
+    conn.close()
+    return render_template('doctor/patients.html', patients=patients)
+
 @app.route("/doctor/new-prescription", methods=["GET", "POST"])
 @login_required
 def new_prescription():
